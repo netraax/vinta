@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="fr" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vinted Analyzer</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        dark: {
+                            100: '#1a1a1a',
+                            200: '#2d2d2d',
+                            300: '#404040',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-dark-100 text-white">
+    <!-- Sidebar -->
+    <div id="sidebar-container"></div>
+
+    <!-- Main Content -->
+    <div class="ml-64"> 
+        <div id="main-content" class="container mx-auto p-4">
+            <!-- Profile Module -->
+            <div id="profile-container" class="mb-4"></div>
+
+            <!-- Text Input -->
+            <div id="input-container" class="mb-4">
+                <!-- Vue initiale -->
+                <div id="input-view" class="container mx-auto p-4" data-view="quick-analysis">
+                    <div class="max-w-2xl mx-auto bg-dark-200 rounded-lg shadow p-6">
+                        <h1 class="text-2xl font-bold mb-4 text-white">Analyseur Vinted</h1>
+                        <textarea id="input-text" class="w-full h-64 p-4 bg-dark-300 text-white border-dark-300 rounded-lg mb-4" 
+                                  placeholder="Collez votre texte Vinted ici..."></textarea>
+                        <button id="analyze-btn" 
+                                class="w-full bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition">
+                            Analyser
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Vue dashboard -->
+                <div id="dashboard-view" class="w-full p-4 hidden" data-view="dashboard">
+                    <div class="grid grid-cols-1 gap-4">
+                        <!-- Les modules seront injectés ici -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script type="module" src="/src/main.js"></script>
+</body>
+</html>
