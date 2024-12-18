@@ -49,7 +49,8 @@ class App {
                 const inputText = document.getElementById('input-text').value;
                 if (inputText.trim()) {
                     const analyzedData = await analyzer.analyze(inputText);
-                    store.dispatch({ type: 'SET_ANALYZED_DATA', payload: analyzedData });
+                    store.setRawText(inputText);
+                    store.setAnalyzedData(analyzedData);
                     navigationState.navigate('dashboard');
                 }
             });
@@ -67,6 +68,9 @@ class App {
         if (targetView) {
             targetView.classList.remove('hidden');
         }
+
+        // Mettre à jour la vue dans le store
+        store.setCurrentView(page);
 
         // Logique spécifique pour chaque page
         switch (page) {
@@ -99,5 +103,5 @@ class App {
     }
 }
 
-// Démarrer l'application
+// Initialiser l'application
 new App();

@@ -1,96 +1,96 @@
-class DataStore {
+import { EventEmitter } from './eventEmitter.js';
+
+class Store extends EventEmitter {
     constructor() {
+        super();
         this.state = {
             rawText: '',
             analyzedData: null,
             ui: {
-                currentView: 'input', // 'input' ou 'dashboard'
-                activeModule: null,
-                error: null
+                currentView: 'dashboard'
             }
         };
-        this.subscribers = [];
+        this.isOnline = false; // Mode hors ligne par défaut
+        this.loadFromLocalStorage();
     }
 
-    // Obtenir l'état actuel
-    getState() {
-        return { ...this.state };
-    }
-
-    // Mettre à jour l'état
     setState(newState) {
-        this.state = {
-            ...this.state,
-            ...newState
-        };
+        this.state = { ...this.state, ...newState };
+        this.saveToLocalStorage();
         this.notify();
     }
 
-    // Notifier les abonnés
-    notify() {
-        this.subscribers.forEach(callback => callback(this.getState()));
+    getState() {
+        return this.state;
     }
 
-    // S'abonner aux changements
-    subscribe(callback) {
-        this.subscribers.push(callback);
-        return () => {
-            this.subscribers = this.subscribers.filter(sub => sub !== callback);
-        };
-    }
-
-    // Nouvelle méthode dispatch pour gérer les actions
-    dispatch(action) {
-        switch (action.type) {
-            case 'SET_ANALYZED_DATA':
-                this.setState({ analyzedData: action.payload });
-                break;
-            case 'SET_RAW_TEXT':
-                this.setState({ rawText: action.payload });
-                break;
-            case 'SET_ERROR':
-                this.setState({ ui: { ...this.state.ui, error: action.payload } });
-                break;
-            case 'SET_CURRENT_VIEW':
-                this.setState({ ui: { ...this.state.ui, currentView: action.payload } });
-                break;
-            default:
-                console.warn('Action non gérée:', action.type);
+    // Gestion du stockage local
+    saveToLocalStorage() {
+        try {
+            localStorage.setItem('dashboard_data', JSON.stringify(this.state));
+        } catch (error) {
+            console.error('Erreur lors de la sauvegarde locale:', error);
         }
     }
 
-    // Définir les données analysées
-    setAnalyzedData(data) {
-        this.dispatch({ type: 'SET_ANALYZED_DATA', payload: data });
+    loadFromLocalStorage() {
+        try {
+            const savedData = localStorage.getItem('dashboard_data');
+            if (savedData) {
+                this.state = JSON.parse(savedData);
+            }
+        } catch (error) {
+            console.error('Erreur lors du chargement des données locales:', error);
+        }
     }
 
-    // Définir le texte brut
+    // Méthodes existantes
     setRawText(text) {
-        this.dispatch({ type: 'SET_RAW_TEXT', payload: text });
+        this.setState({ rawText: text });
     }
 
-    // Mettre à jour l'UI
-    setUIState(uiState) {
+    setAnalyzedData(data) {
+        this.setState({ analyzedData: data });
+    }
+
+    setCurrentView(view) {
         this.setState({
             ui: {
                 ...this.state.ui,
-                ...uiState
+                currentView: view
             }
         });
     }
 
-    // Réinitialiser le store
-    reset() {
-        this.setState({
-            rawText: '',
-            analyzedData: null,
-            ui: {
-                currentView: 'input',
-                activeModule: null,
-                error: null
+    // Nouvelles méthodes pour le backend (préparées mais non utilisées pour l'instant)
+    async saveData(data) {
+        // Sauvegarde toujours en local d'abord
+        this.setState(data);
+
+        // Si online et connecté, tente de sauvegarder sur le serveur
+        if (this.isOnline && this.isLoggedIn()) {
+            try {
+                await fetch('/api/dashboard/save', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${this.getToken()}`
+                    },
+                    body: JSON.stringify(data)
+                });
+            } catch (error) {
+                console.log('Mode hors ligne : sauvegarde locale uniquement');
             }
-        });
+        }
+    }
+
+    isLoggedIn() {
+        return !!localStorage.getItem('auth_token');
+    }
+
+    getToken() {
+        return localStorage.getItem('auth_token');
     }
 }
 
-export const store = new DataStore();
+export const store = new Store();

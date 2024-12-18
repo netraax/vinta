@@ -4,6 +4,7 @@ class UIManager {
     constructor() {
         this._initializeElements();
         this._initializeEventListeners();
+        this.initialize();
     }
 
     _initializeElements() {
@@ -42,6 +43,26 @@ class UIManager {
         store.subscribe(() => {
             this._updateUI(store.getState());
         });
+    }
+
+    initialize() {
+        this.initializeModules();
+        this.setupModeIndicator();
+    }
+
+    setupModeIndicator() {
+        // Ajouter l'indicateur de mode (local/online) dans le header
+        const header = document.querySelector('.header-right');
+        if (header) {
+            const modeIndicator = document.createElement('div');
+            modeIndicator.className = 'text-sm text-gray-400 ml-2';
+            modeIndicator.textContent = 'Mode local';
+            header.appendChild(modeIndicator);
+        }
+    }
+
+    initializeModules() {
+        // Cette méthode est vide pour le moment, mais vous pouvez l'utiliser pour initialiser vos modules
     }
 
     _updateUI(state) {

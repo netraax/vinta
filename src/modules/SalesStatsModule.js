@@ -19,15 +19,31 @@ class SalesStatsModule {
                         </svg>
                         <h3 class="text-lg font-semibold text-gray-200">Ventes</h3>
                     </div>
+                    <div class="flex items-baseline space-x-2">
+                        <div class="text-lg font-bold text-gray-100" id="sales-count">-</div>
+                        <div class="text-sm text-gray-400">ventes</div>
+                    </div>
                 </div>
-                <div id="sales-period" class="text-sm text-gray-400"></div>
-                <div class="text-3xl font-bold text-gray-100 mb-2" id="sales-count">-</div>
+                <div id="sales-period" class="text-sm text-gray-400 mb-1"></div>
+                <div class="flex items-baseline mb-3">
+                    <div class="text-3xl font-bold text-emerald-400" id="sales-revenue">-</div>
+                    <div class="text-sm text-gray-400 ml-2">revenus</div>
+                </div>
                 <div class="flex-grow relative">
                     <canvas id="sales-chart" class="absolute inset-0"></canvas>
                 </div>
             </div>
         `;
         return container;
+    }
+
+    formatMoney(amount) {
+        return new Intl.NumberFormat('fr-FR', {
+            style: 'currency',
+            currency: 'EUR',
+            minimumFractionDigits: 0,
+            maximumFractionDigits: 0
+        }).format(amount);
     }
 
     updateStats() {
@@ -39,6 +55,9 @@ class SalesStatsModule {
         const firstDate = new Date(ventes[0].date);
         const lastDate = new Date(ventes[ventes.length - 1].date);
 
+        // Calculer le CA total
+        const totalRevenue = ventes.reduce((sum, vente) => sum + (vente.prix || 0), 0);
+
         // Mettre à jour la période
         const formatDate = (date) => date.toLocaleDateString('fr-FR', { 
             day: 'numeric', 
@@ -49,6 +68,9 @@ class SalesStatsModule {
 
         // Mettre à jour le nombre total de ventes
         document.getElementById('sales-count').textContent = ventes.length;
+
+        // Mettre à jour le CA
+        document.getElementById('sales-revenue').textContent = this.formatMoney(totalRevenue);
 
         // Préparer les données pour le graphique
         const ventesParJour = this.aggregateVentesByDay(ventes);
