@@ -3,8 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Vinted Analyzer</title>
+    <title>VintedPro - Analyseur</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script>
         tailwind.config = {
             darkMode: 'class',
@@ -48,9 +49,12 @@
                 </div>
 
                 <!-- Vue dashboard -->
-                <div id="dashboard-view" class="w-full p-4 hidden" data-view="dashboard">
-                    <div class="grid grid-cols-1 gap-4">
-                        <!-- Les modules seront injectés ici -->
+                <div id="dashboard-view" data-view="dashboard" class="hidden">
+                    <div class="container mx-auto p-4">
+                        <h2 class="text-2xl font-bold mb-4 text-gray-200">Tableau de bord</h2>
+                        <div id="dashboard-stats" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                            <!-- Les modules de statistiques seront injectés ici -->
+                        </div>
                     </div>
                 </div>
             </div>

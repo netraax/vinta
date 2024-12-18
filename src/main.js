@@ -3,6 +3,7 @@ import { store } from './dataStore.js';
 import { analyzer } from './analyzer.js';
 import ProfileModule from './modules/ProfileModule.js';
 import SidebarModule from './modules/SidebarModule.js';
+import SalesStatsModule from './modules/SalesStatsModule.js';
 
 class App {
     constructor() {
@@ -24,9 +25,11 @@ class App {
         // Initialiser et monter les modules
         const sidebarModule = new SidebarModule();
         const profileModule = new ProfileModule();
+        const salesStatsModule = new SalesStatsModule();
 
         document.getElementById('sidebar-container').appendChild(sidebarModule.getElement());
         document.getElementById('profile-container').appendChild(profileModule.getElement());
+        document.getElementById('dashboard-stats').appendChild(salesStatsModule.getElement());
     }
 
     setupNavigation() {

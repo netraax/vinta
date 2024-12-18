@@ -9,7 +9,8 @@ class UIManager {
     _initializeElements() {
         this.elements = {
             inputView: document.getElementById('input-view'),
-            dashboardView: document.getElementById('dashboard-view').querySelector('.grid'),
+            dashboardView: document.getElementById('dashboard-view'),
+            dashboardStats: document.getElementById('dashboard-stats'),
             inputText: document.getElementById('input-text'),
             analyzeBtn: document.getElementById('analyze-btn')
         };
@@ -22,7 +23,7 @@ class UIManager {
     _initializeEventListeners() {
         // Écouter les changements dans la zone de texte
         this.elements.inputText.addEventListener('input', (e) => {
-            store.setRawText(e.target.value);
+            store.dispatch({ type: 'SET_RAW_TEXT', payload: e.target.value });
         });
 
         // Écouter le clic sur le bouton d'analyse
@@ -38,20 +39,15 @@ class UIManager {
         });
 
         // S'abonner aux changements d'état
-        store.subscribe((state) => {
-            this._updateUI(state);
+        store.subscribe(() => {
+            this._updateUI(store.getState());
         });
     }
 
     _updateUI(state) {
         const currentView = state.ui.currentView;
-        if (currentView === 'input' && !this.elements.inputView.classList.contains('hidden')) {
-            return;
-        }
-        if (currentView === 'dashboard' && !this.elements.dashboardView.parentElement.classList.contains('hidden')) {
-            return;
-        }
-
+        
+        // Mettre à jour la visibilité des vues
         if (currentView === 'input') {
             this._showInputView();
         } else if (currentView === 'dashboard') {
@@ -61,24 +57,20 @@ class UIManager {
 
     _showInputView() {
         this.elements.inputView.classList.remove('hidden');
-        this.elements.dashboardView.parentElement.classList.add('hidden');
+        this.elements.dashboardView.classList.add('hidden');
     }
 
     _showDashboardView() {
         this.elements.inputView.classList.add('hidden');
-        this.elements.dashboardView.parentElement.classList.remove('hidden');
+        this.elements.dashboardView.classList.remove('hidden');
     }
 
     showInput() {
-        if (store.getState().ui.currentView !== 'input') {
-            store.setUIState({ currentView: 'input' });
-        }
+        store.dispatch({ type: 'SET_CURRENT_VIEW', payload: 'input' });
     }
 
     showDashboard() {
-        if (store.getState().ui.currentView !== 'dashboard') {
-            store.setUIState({ currentView: 'dashboard' });
-        }
+        store.dispatch({ type: 'SET_CURRENT_VIEW', payload: 'dashboard' });
     }
 
     // Méthode pour ajouter un module au dashboard
@@ -88,50 +80,19 @@ class UIManager {
             return;
         }
         
-        // Créer un conteneur pour le module
-        const moduleContainer = document.createElement('div');
-        moduleContainer.className = 'module-container';
-        moduleContainer.appendChild(moduleElement);
-        
-        this.elements.dashboardView.appendChild(moduleContainer);
+        this.elements.dashboardStats.appendChild(moduleElement);
     }
 
     // Méthode pour nettoyer le dashboard
     clearDashboard() {
-        while (this.elements.dashboardView.firstChild) {
-            this.elements.dashboardView.removeChild(this.elements.dashboardView.firstChild);
+        while (this.elements.dashboardStats.firstChild) {
+            this.elements.dashboardStats.removeChild(this.elements.dashboardStats.firstChild);
         }
     }
 
     _showError(message) {
-        // Créer un élément d'erreur
-        const errorElement = document.createElement('div');
-        errorElement.className = 'bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mt-4';
-        errorElement.role = 'alert';
-        errorElement.innerHTML = `
-            <span class="block sm:inline">${message}</span>
-            <span class="absolute top-0 bottom-0 right-0 px-4 py-3">
-                <svg class="fill-current h-6 w-6 text-red-500" role="button" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
-                    <title>Fermer</title>
-                    <path d="M14.348 14.849a1.2 1.2 0 0 1-1.697 0L10 11.819l-2.651 3.029a1.2 1.2 0 1 1-1.697-1.697l2.758-3.15-2.759-3.152a1.2 1.2 0 1 1 1.697-1.697L10 8.183l2.651-3.031a1.2 1.2 0 1 1 1.697 1.697l-2.758 3.152 2.758 3.15a1.2 1.2 0 0 1 0 1.698z"/>
-                </svg>
-            </span>
-        `;
-
-        // Ajouter l'erreur après la zone de texte
-        this.elements.inputText.parentNode.insertBefore(errorElement, this.elements.analyzeBtn);
-
-        // Supprimer l'erreur après 5 secondes
-        setTimeout(() => {
-            if (errorElement.parentNode) {
-                errorElement.parentNode.removeChild(errorElement);
-            }
-        }, 5000);
-
-        // Ajouter un gestionnaire de clic pour fermer l'erreur
-        errorElement.querySelector('svg').addEventListener('click', () => {
-            errorElement.parentNode.removeChild(errorElement);
-        });
+        console.error(message);
+        // Vous pouvez ajouter ici une notification visuelle pour l'utilisateur
     }
 }
 
