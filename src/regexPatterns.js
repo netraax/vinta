@@ -18,7 +18,7 @@ const patterns = {
     articlesActifs: /(\d+)\s*articles(?![^{]*vendus)/,
 
     // Ventes
-    venteAvecDate: /Vente\s+([^€\n]+)\s+(\d+[.,]\d+)\s*€\s+(\d+\s+[^\n]+\s+2024)/g,
+    venteAvecDate: /(?:Vente|Paiements de Vinted)\n([^€\n]+)\n(\d+[,.]\d{2}) ?€\n(\d{1,2} \w+ 2024)/g,
     venteStat: new RegExp([
         '([^,]+?),\\s*',
         'prix\\s*:\\s*(\\d+[.,]\\d+)\\s*€,\\s*',
@@ -29,10 +29,10 @@ const patterns = {
     ].join(''), 'g'),
 
     // Marketing et finances
-    boost: /Commande d'un Boost[^€]*(\d+[.,]\d+)\s*€\s+(\d+\s+[^\n]+\s+2024)/g,
-    vitrine: /Commande Dressing en vitrine[^€]*(\d+[.,]\d+)\s*€\s+(\d+\s+[^\n]+\s+2024)/g,
-    transfert: /Transfert vers le compte[^€]*(\d+[.,]\d+)\s*€\s+(\d+\s+[^\n]+\s+2024)/g,
-    solde: /Solde final\s+(\d+[.,]\d+)\s*€/
+    boost: /(\d{1,2} \w+ 2024)\nCommande d'un Boost[^€]*-(\d+[,.]\d{2}) ?€/g,
+    vitrine: /(\d{1,2} \w+ 2024)\nCommande Dressing en vitrine[^€]*-(\d+[,.]\d{2}) ?€/g,
+    transfert: /(\d{1,2} \w+ 2024)\nTransfert vers le compte[^€]*-(\d+[,.]\d{2}) ?€/g,
+    solde: /Solde final\s+(\d+[,.]\d{2})\s*€/
 };
 
 // Extracteurs de données
@@ -54,18 +54,5 @@ const extractors = {
     }
 };
 
-// Transformateurs de données
-const transformers = {
-    // Convertit une chaîne de prix en nombre
-    parsePrice: (priceStr) => {
-        return parseFloat(priceStr.replace(',', '.'));
-    },
-
-    // Formate une date
-    formatDate: (dateStr) => {
-        return dateStr.trim();
-    }
-};
-
 // Export des fonctionnalités
-export { patterns, extractors, transformers };
+export { patterns, extractors };

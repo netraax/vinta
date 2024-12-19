@@ -4,6 +4,8 @@ import { analyzer } from './analyzer.js';
 import ProfileModule from './modules/ProfileModule.js';
 import SidebarModule from './modules/SidebarModule.js';
 import SalesStatsModule from './modules/SalesStatsModule.js';
+import ExpenseStatsModule from './modules/ExpenseStatsModule.js';
+import TotalStatsModule from './modules/TotalStatsModule.js';
 import AccountModule from './modules/AccountModule.js';
 
 class App {
@@ -33,12 +35,21 @@ class App {
         const sidebarModule = new SidebarModule();
         const profileModule = new ProfileModule();
         const salesStatsModule = new SalesStatsModule();
+        const expenseStatsModule = new ExpenseStatsModule();
+        const totalStatsModule = new TotalStatsModule();
         const accountModule = new AccountModule();
 
         // Monter les modules
         document.getElementById('sidebar-container').appendChild(sidebarModule.getElement());
         document.getElementById('profile-container').appendChild(profileModule.getElement());
-        document.getElementById('dashboard-stats').appendChild(salesStatsModule.getElement());
+        
+        // Créer un conteneur flex pour les stats
+        const statsContainer = document.getElementById('dashboard-stats');
+        statsContainer.className = 'flex gap-4 flex-wrap';
+        statsContainer.appendChild(salesStatsModule.getElement());
+        statsContainer.appendChild(expenseStatsModule.getElement());
+        statsContainer.appendChild(totalStatsModule.getElement());
+        
         document.getElementById('input-container').appendChild(accountModule.getElement());
 
         // Stocker les références des modules
@@ -46,6 +57,8 @@ class App {
             sidebar: sidebarModule,
             profile: profileModule,
             salesStats: salesStatsModule,
+            expenseStats: expenseStatsModule,
+            totalStats: totalStatsModule,
             account: accountModule
         };
 
@@ -127,6 +140,9 @@ class App {
                     if (statsBlock) {
                         statsBlock.classList.remove('hidden');
                     }
+
+                    // Afficher le module de profil
+                    document.getElementById('profile-container').classList.remove('hidden');
 
                 } catch (error) {
                     console.error('Erreur lors de l\'analyse:', error);

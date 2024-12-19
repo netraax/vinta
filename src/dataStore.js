@@ -6,10 +6,16 @@ class Store extends EventEmitter {
         this.state = {
             user: null,
             rawText: '',
-            analyzedData: null,
+            analyzedData: {
+                boutique: null,
+                ventes: [],
+                depenses: [],
+                stats: null
+            },
             ui: {
                 currentView: 'dashboard',
-                isAuthenticated: false
+                isAuthenticated: false,
+                activeModules: ['profile', 'sales', 'expenses', 'total']
             }
         };
         this.loadFromLocalStorage();

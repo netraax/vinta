@@ -1,4 +1,23 @@
-import { patterns, extractors, transformers } from './regexPatterns.js';
+import { patterns, extractors } from './regexPatterns.js';
+
+const transformers = {
+    parsePrice(priceStr) {
+        return parseFloat(priceStr.replace(',', '.'));
+    },
+    formatDate(dateStr) {
+        // Si la date est déjà au format "28 novembre 2024", on la retourne telle quelle
+        if (/^\d{1,2} \w+ 2024$/.test(dateStr)) {
+            return dateStr;
+        }
+        // Sinon on la transforme
+        const date = new Date(dateStr);
+        return date.toLocaleDateString('fr-FR', {
+            day: 'numeric',
+            month: 'long',
+            year: 'numeric'
+        });
+    }
+};
 
 class VintedAnalyzer {
     constructor() {
@@ -45,7 +64,8 @@ class VintedAnalyzer {
                 soldeActuel: 0
             },
             ventes: [],
-            ventes_stat: []
+            ventes_stat: [],
+            depenses: []
         };
     }
 
@@ -58,6 +78,7 @@ class VintedAnalyzer {
             this._extractVentes(text);
             this._extractMarketing(text);
             this._extractFinances(text);
+            this._extractDepenses(text);
 
             console.log('✅ Résultat de l\'analyse:', {
                 boutique: {
@@ -75,7 +96,8 @@ class VintedAnalyzer {
                 finances: {
                     transferts: this.result.finances.transferts.length,
                     solde: this.result.finances.soldeActuel
-                }
+                },
+                depenses: this.result.depenses.length
             });
             console.groupEnd();
 
@@ -186,84 +208,30 @@ class VintedAnalyzer {
         
         // Ventes avec date (ventes réelles)
         const ventesMatches = extractors.extractAll(patterns.venteAvecDate, text);
+        console.log('Matches trouvés:', ventesMatches.length);
+        ventesMatches.forEach((match, i) => {
+            console.log(`Match ${i + 1}:`, {
+                full: match[0],
+                nom: match[1],
+                prix: match[2],
+                date: match[3]
+            });
+        });
+
         this.result.ventes = ventesMatches.map(match => ({
             nom: match[1].trim(),
             prix: transformers.parsePrice(match[2]),
             date: transformers.formatDate(match[3])
         }));
 
-        // Ventes stats (pour statistiques uniquement)
-        const statsMatches = extractors.extractAll(patterns.venteStat, text);
-        this.result.ventes_stat = statsMatches.map(match => ({
-            nom: match[1].trim(),
-            prix: transformers.parsePrice(match[2]),
-            marque: match[3].trim(),
-            vues: parseInt(match[4]),
-            favoris: parseInt(match[5])
-        }));
-
         // Affichage des ventes réelles
         console.group('📅 Ventes réelles (transactions validées)');
         console.log('Nombre total de ventes:', this.result.ventes.length);
         if (this.result.ventes.length > 0) {
+            console.table(this.result.ventes);
             const totalCA = this.result.ventes.reduce((sum, v) => sum + v.prix, 0);
             console.log('Chiffre d\'affaires total:', totalCA.toFixed(2) + '€');
             console.log('Prix moyen de vente:', (totalCA / this.result.ventes.length).toFixed(2) + '€');
-            
-            console.group('5 dernières ventes:');
-            console.table(this.result.ventes.slice(-5).map(v => ({
-                nom: v.nom,
-                prix: v.prix + '€',
-                date: v.date
-            })));
-            console.groupEnd();
-        }
-        console.groupEnd();
-
-        // Statistiques détaillées des articles vendus
-        console.group('📊 Statistiques des articles vendus');
-        if (this.result.ventes_stat.length > 0) {
-            // Stats par marque
-            const marqueStats = this.result.ventes_stat.reduce((acc, v) => {
-                if (!acc[v.marque]) {
-                    acc[v.marque] = {
-                        count: 0,
-                        totalPrix: 0,
-                        totalVues: 0,
-                        totalFavoris: 0
-                    };
-                }
-                acc[v.marque].count++;
-                acc[v.marque].totalPrix += v.prix;
-                acc[v.marque].totalVues += v.vues;
-                acc[v.marque].totalFavoris += v.favoris;
-                return acc;
-            }, {});
-
-            // Stats globales
-            const globalStats = this.result.ventes_stat.reduce((acc, v) => ({
-                totalPrix: acc.totalPrix + v.prix,
-                totalVues: acc.totalVues + v.vues,
-                totalFavoris: acc.totalFavoris + v.favoris
-            }), { totalPrix: 0, totalVues: 0, totalFavoris: 0 });
-
-            console.log('Nombre d\'articles analysés:', this.result.ventes_stat.length);
-            console.log('Statistiques globales:');
-            console.log('- Prix moyen:', (globalStats.totalPrix / this.result.ventes_stat.length).toFixed(2) + '€');
-            console.log('- Moyenne vues/article:', (globalStats.totalVues / this.result.ventes_stat.length).toFixed(2));
-            console.log('- Moyenne favoris/article:', (globalStats.totalFavoris / this.result.ventes_stat.length).toFixed(2));
-
-            console.group('Statistiques par marque:');
-            Object.entries(marqueStats)
-                .sort((a, b) => b[1].count - a[1].count)
-                .forEach(([marque, stats]) => {
-                    console.log(`\n${marque}:`);
-                    console.log(`- Nombre d'articles: ${stats.count}`);
-                    console.log(`- Prix moyen: ${(stats.totalPrix / stats.count).toFixed(2)}€`);
-                    console.log(`- Moyenne vues: ${(stats.totalVues / stats.count).toFixed(2)}`);
-                    console.log(`- Moyenne favoris: ${(stats.totalFavoris / stats.count).toFixed(2)}`);
-                });
-            console.groupEnd();
         }
         console.groupEnd();
 
@@ -276,19 +244,21 @@ class VintedAnalyzer {
         // Boosts
         const boostMatches = extractors.extractAll(patterns.boost, text);
         this.result.marketing.boosts = boostMatches.map(match => ({
-            montant: transformers.parsePrice(match[1]),
-            date: transformers.formatDate(match[2])
+            date: transformers.formatDate(match[1]),
+            montant: transformers.parsePrice(match[2])
         }));
 
         // Dressing en vitrine
         const vitrineMatches = extractors.extractAll(patterns.vitrine, text);
         this.result.marketing.dressingVitrine = vitrineMatches.map(match => ({
-            montant: transformers.parsePrice(match[1]),
-            date: transformers.formatDate(match[2])
+            date: transformers.formatDate(match[1]),
+            montant: transformers.parsePrice(match[2])
         }));
 
-        console.log('Boosts:', this.result.marketing.boosts.length);
-        console.log('Vitrines:', this.result.marketing.dressingVitrine.length);
+        console.log('Marketing:', {
+            boosts: this.result.marketing.boosts.length,
+            vitrine: this.result.marketing.dressingVitrine.length
+        });
         console.groupEnd();
     }
 
@@ -298,8 +268,8 @@ class VintedAnalyzer {
         // Transferts
         const transfertMatches = extractors.extractAll(patterns.transfert, text);
         this.result.finances.transferts = transfertMatches.map(match => ({
-            montant: transformers.parsePrice(match[1]),
-            date: transformers.formatDate(match[2])
+            date: transformers.formatDate(match[1]),
+            montant: transformers.parsePrice(match[2])
         }));
 
         // Solde actuel
@@ -311,6 +281,46 @@ class VintedAnalyzer {
         console.log('Nombre de transferts:', this.result.finances.transferts.length);
         console.log('Solde actuel:', this.result.finances.soldeActuel);
         console.groupEnd();
+    }
+
+    _extractDepenses(text) {
+        console.group('💸 Extraction des dépenses');
+        
+        const depenses = [];
+        let match;
+        
+        // Extraire les boosts
+        while ((match = patterns.boost.exec(text)) !== null) {
+            depenses.push({
+                type: 'boost',
+                date: transformers.formatDate(match[1]),
+                montant: transformers.parsePrice(match[2])
+            });
+        }
+        
+        // Extraire les vitrines
+        while ((match = patterns.vitrine.exec(text)) !== null) {
+            depenses.push({
+                type: 'vitrine',
+                date: transformers.formatDate(match[1]),
+                montant: transformers.parsePrice(match[2])
+            });
+        }
+        
+        this.result.depenses = depenses;
+
+        console.log('Dépenses trouvées:', depenses.length);
+        if (depenses.length > 0) {
+            console.log('Première dépense:', depenses[0]);
+            console.log('Dernière dépense:', depenses[depenses.length - 1]);
+            console.log('Total dépensé:', depenses.reduce((sum, d) => sum + d.montant, 0), '€');
+        }
+        console.groupEnd();
+    }
+
+    parseDate(dateStr) {
+        const [day, month, year] = dateStr.split('/');
+        return `${year}-${month}-${day}`;
     }
 }
 

@@ -44,35 +44,58 @@ class UIManager {
                 return;
             }
 
-            try {
-                // Désactiver le bouton pendant l'analyse
-                this.elements.analyzeBtnDashboard.disabled = true;
-                this.elements.analyzeBtnDashboard.textContent = 'Analyse en cours...';
-
-                // Faire l'analyse localement
-                const analyzedData = analyzer.analyze(text);
-                
-                // Sauvegarder dans le store
-                store.dispatch({ type: 'SET_RAW_TEXT', payload: text });
-                store.dispatch({ type: 'SET_ANALYZED_DATA', payload: analyzedData });
-
-                // Mettre à jour l'interface avec les résultats
-                this._updateAnalysisResults(analyzedData);
-
-            } catch (error) {
-                console.error('Erreur:', error);
-                this._showError('Erreur lors de l\'analyse');
-            } finally {
-                // Réactiver le bouton
-                this.elements.analyzeBtnDashboard.disabled = false;
-                this.elements.analyzeBtnDashboard.textContent = 'Analyser';
-            }
+            await this._handleAnalysis(text);
         });
 
         // S'abonner aux changements d'état
         store.subscribe(() => {
             this._updateUI(store.getState());
         });
+    }
+
+    async _handleAnalysis(text) {
+        try {
+            // Désactiver le bouton pendant l'analyse
+            this.elements.analyzeBtnDashboard.disabled = true;
+            this.elements.analyzeBtnDashboard.textContent = 'Analyse en cours...';
+
+            // Analyser le texte
+            const analyzedData = analyzer.analyze(text);
+
+            // Mettre à jour le store
+            store.setState({ 
+                analyzedData,
+                ui: {
+                    ...store.getState().ui,
+                    activeModules: ['profile', 'sales', 'expenses']
+                }
+            });
+
+            // Afficher les modules
+            this._showModules();
+
+        } catch (error) {
+            console.error('Erreur lors de l\'analyse:', error);
+            this._showError('Erreur lors de l\'analyse');
+        } finally {
+            // Réactiver le bouton
+            this.elements.analyzeBtnDashboard.disabled = false;
+            this.elements.analyzeBtnDashboard.textContent = 'Analyser';
+        }
+    }
+
+    _showModules() {
+        // Afficher les modules actifs
+        const { activeModules } = store.getState().ui;
+        
+        if (activeModules.includes('profile')) {
+            document.getElementById('profile-container').classList.remove('hidden');
+        }
+        
+        if (activeModules.includes('sales') || activeModules.includes('expenses')) {
+            const statsContainer = document.getElementById('dashboard-stats');
+            statsContainer.classList.remove('hidden');
+        }
     }
 
     _updateUI(state) {
