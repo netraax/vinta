@@ -1,11 +1,26 @@
 // Copie de votre analyzer.js actuel
-const { extractSalesData, extractProfileData } = require('../../src/analyzer');
-
 class Analyzer {
     static analyze(text) {
         return {
-            sales: extractSalesData(text),
-            profile: extractProfileData(text)
+            sales: this.extractSalesData(text),
+            profile: this.extractProfileData(text)
+        };
+    }
+
+    static extractSalesData(text) {
+        // Logique d'extraction des données de vente
+        return {
+            totalSales: 0,
+            recentSales: []
+        };
+    }
+
+    static extractProfileData(text) {
+        // Logique d'extraction des données de profil
+        return {
+            username: '',
+            rating: 0,
+            joinDate: ''
         };
     }
 }
