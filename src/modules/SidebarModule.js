@@ -32,6 +32,9 @@ class SidebarModule {
                     <div>
                         <div id="user-name" class="font-medium text-white">Non connecté</div>
                         <div id="user-email" class="text-sm text-gray-400">Connectez-vous</div>
+                        <button id="logout-button" class="text-sm text-red-400 hover:text-red-300 mt-1">
+                            Se déconnecter
+                        </button>
                     </div>
                 </div>
             </div>
@@ -65,16 +68,23 @@ class SidebarModule {
     }
 
     _setupEventListeners() {
-        this.element.querySelectorAll('.nav-link').forEach(link => {
+        const navLinks = this.element.querySelectorAll('[data-page]');
+        navLinks.forEach(link => {
             link.addEventListener('click', (e) => {
                 e.preventDefault();
-                const page = e.currentTarget.dataset.page;
+                const page = link.dataset.page;
                 if (page) {
-                    this._updateActiveLink(page);
                     navigationState.navigate(page);
                 }
             });
         });
+
+        const logoutButton = this.element.querySelector('#logout-button');
+        if (logoutButton) {
+            logoutButton.addEventListener('click', () => {
+                navigationState.logout();
+            });
+        }
     }
 
     updateUserInfo(user) {

@@ -1,5 +1,4 @@
-import { analyzer } from '../../src/analyzer.js';
-
+// Contrôleur d'analyse simplifié
 const analyzeText = async (req, res) => {
     try {
         const { text } = req.body;
@@ -8,10 +7,12 @@ const analyzeText = async (req, res) => {
             return res.status(400).json({ error: 'Le texte est requis' });
         }
 
-        // Utiliser l'analyseur existant
-        const analysis = analyzer.analyze(text);
-
-        res.json(analysis);
+        // Pour l'instant, on renvoie juste une confirmation
+        res.json({ 
+            success: true,
+            message: 'Texte reçu avec succès',
+            textLength: text.length
+        });
     } catch (error) {
         console.error('Erreur lors de l\'analyse:', error);
         res.status(500).json({ error: 'Erreur lors de l\'analyse du texte' });
