@@ -1,8 +1,12 @@
 // Gestionnaire d'état pour la navigation
 class NavigationState {
     constructor() {
-        this.currentPage = 'dashboard';
+        this.currentPage = this._getInitialPage();
         this.subscribers = [];
+        this.isAuthenticated = false;
+        
+        // Vérifier l'authentification au démarrage
+        this.checkAuth();
         
         // Gérer la navigation avec l'historique du navigateur
         window.addEventListener('popstate', (event) => {
@@ -10,6 +14,31 @@ class NavigationState {
                 this.navigate(event.state.page, false);
             }
         });
+    }
+
+    _getInitialPage() {
+        // Récupérer la page depuis l'URL ou utiliser la page par défaut
+        const hash = window.location.hash.slice(1);
+        return hash || 'dashboard';
+    }
+
+    checkAuth() {
+        const token = localStorage.getItem('token');
+        this.isAuthenticated = !!token;
+
+        // Rediriger si nécessaire
+        const currentPath = window.location.pathname;
+        if (this.isAuthenticated) {
+            // Si connecté et sur login, rediriger vers dashboard
+            if (currentPath.includes('login.html')) {
+                window.location.replace('/index.html');
+            }
+        } else {
+            // Si non connecté et pas sur login, rediriger vers login
+            if (!currentPath.includes('login.html')) {
+                window.location.replace('/login.html');
+            }
+        }
     }
 
     subscribe(callback) {
@@ -23,6 +52,12 @@ class NavigationState {
     }
 
     navigate(page, addToHistory = true) {
+        // Vérifier l'authentification avant la navigation
+        if (!this.isAuthenticated && page !== 'login') {
+            window.location.replace('/login.html');
+            return;
+        }
+
         this.currentPage = page;
         
         if (addToHistory) {
@@ -38,6 +73,11 @@ class NavigationState {
     }
 
     updateActiveLink() {
+        // Ne mettre à jour les liens que si on est sur le dashboard
+        if (!document.querySelector('.nav-link')) {
+            return;
+        }
+
         // Retirer la classe active de tous les liens
         document.querySelectorAll('.nav-link').forEach(link => {
             link.classList.remove('bg-dark-200', 'text-blue-500');
@@ -50,8 +90,12 @@ class NavigationState {
         }
     }
 
-    getCurrentPage() {
-        return this.currentPage;
+    // Méthode pour gérer la déconnexion
+    logout() {
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+        this.isAuthenticated = false;
+        window.location.replace('/login.html');
     }
 }
 

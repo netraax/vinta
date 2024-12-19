@@ -31,7 +31,7 @@
     <div class="ml-64"> 
         <div id="main-content" class="container mx-auto p-4">
             <!-- Profile Module -->
-            <div id="profile-container" class="mb-4"></div>
+            <div id="profile-container" class="mb-4 hidden"></div>
 
             <!-- Text Input -->
             <div id="input-container" class="mb-4">
@@ -52,6 +52,23 @@
                 <div id="dashboard-view" data-view="dashboard" class="hidden">
                     <div class="container mx-auto p-4">
                         <h2 class="text-2xl font-bold mb-4 text-gray-200">Tableau de bord</h2>
+                        <div class="bg-dark-200 rounded-lg p-6 mb-8">
+                            <h2 class="text-xl font-semibold mb-4">Analyser une annonce</h2>
+                            <div class="space-y-4">
+                                <div>
+                                    <label for="input-text" class="block text-sm font-medium text-gray-400 mb-2">
+                                        Collez le texte de l'annonce ici
+                                    </label>
+                                    <textarea id="input-text-dashboard" rows="4" 
+                                        class="w-full px-3 py-2 bg-dark-300 border border-dark-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                        placeholder="Collez le texte de votre annonce Vinted ici..."></textarea>
+                                </div>
+                                <button id="analyze-btn-dashboard" 
+                                    class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition">
+                                    Analyser
+                                </button>
+                            </div>
+                        </div>
                         <div id="dashboard-stats" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                             <!-- Les modules de statistiques seront injectés ici -->
                         </div>

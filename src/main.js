@@ -1,12 +1,19 @@
-import { navigationState } from './navigation.js';
 import { store } from './dataStore.js';
+import { navigationState } from './navigation.js';
 import { analyzer } from './analyzer.js';
 import ProfileModule from './modules/ProfileModule.js';
 import SidebarModule from './modules/SidebarModule.js';
 import SalesStatsModule from './modules/SalesStatsModule.js';
+import AccountModule from './modules/AccountModule.js';
 
 class App {
     constructor() {
+        // Vérifier l'authentification avant d'initialiser
+        navigationState.checkAuth();
+        if (!navigationState.isAuthenticated) {
+            return;
+        }
+
         this.init();
     }
 
@@ -26,80 +33,138 @@ class App {
         const sidebarModule = new SidebarModule();
         const profileModule = new ProfileModule();
         const salesStatsModule = new SalesStatsModule();
+        const accountModule = new AccountModule();
 
+        // Monter les modules
         document.getElementById('sidebar-container').appendChild(sidebarModule.getElement());
         document.getElementById('profile-container').appendChild(profileModule.getElement());
         document.getElementById('dashboard-stats').appendChild(salesStatsModule.getElement());
+        document.getElementById('input-container').appendChild(accountModule.getElement());
+
+        // Stocker les références des modules
+        this.modules = {
+            sidebar: sidebarModule,
+            profile: profileModule,
+            salesStats: salesStatsModule,
+            account: accountModule
+        };
+
+        // Mettre à jour les informations utilisateur
+        const userData = JSON.parse(localStorage.getItem('user'));
+        if (userData) {
+            this.modules.sidebar.updateUserInfo(userData);
+            this.modules.account.updateUserInfo(userData);
+        }
     }
 
     setupNavigation() {
-        // Gestionnaire de vues
-        navigationState.subscribe(this.handleNavigation);
+        // Écouter les changements de navigation
+        navigationState.subscribe((page) => {
+            // Cacher toutes les vues
+            document.querySelectorAll('[data-view]').forEach(view => {
+                view.classList.add('hidden');
+            });
 
-        // Initialiser la navigation
-        const hash = window.location.hash.slice(1) || 'dashboard';
-        navigationState.navigate(hash, false);
+            // Afficher la vue actuelle
+            const currentView = document.querySelector(`[data-view="${page}"]`);
+            if (currentView) {
+                currentView.classList.remove('hidden');
+            }
+        });
     }
 
     setupEventListeners() {
-        // Gérer l'analyse du texte
-        const analyzeBtn = document.getElementById('analyze-btn');
-        if (analyzeBtn) {
-            analyzeBtn.addEventListener('click', async () => {
-                const inputText = document.getElementById('input-text').value;
-                if (inputText.trim()) {
-                    const analyzedData = await analyzer.analyze(inputText);
-                    store.setRawText(inputText);
-                    store.setAnalyzedData(analyzedData);
-                    navigationState.navigate('dashboard');
+        // Écouter les changements dans la zone de texte
+        const inputText = document.getElementById('input-text-dashboard');
+        if (inputText) {
+            inputText.addEventListener('input', (e) => {
+                // Sauvegarder uniquement le texte brut sans déclencher d'autres actions
+                store.dispatch({ type: 'SET_RAW_TEXT', payload: e.target.value });
+                
+                // S'assurer que le bloc de texte est visible
+                const inputBlock = document.querySelector('.bg-dark-200.rounded-lg.p-6.mb-8');
+                if (inputBlock) {
+                    inputBlock.classList.remove('hidden');
+                }
+                
+                // Cacher les stats jusqu'à l'analyse
+                const statsBlock = document.getElementById('dashboard-stats');
+                if (statsBlock) {
+                    statsBlock.classList.add('hidden');
                 }
             });
         }
-    }
 
-    handleNavigation(page) {
-        // Cacher toutes les vues
-        document.querySelectorAll('[data-view]').forEach(view => {
-            view.classList.add('hidden');
+        // Écouter le clic sur le bouton d'analyse
+        const analyzeBtn = document.getElementById('analyze-btn-dashboard');
+        if (analyzeBtn) {
+            analyzeBtn.addEventListener('click', () => {
+                const text = inputText.value.trim();
+                if (!text) {
+                    this.showError('Veuillez entrer du texte à analyser');
+                    return;
+                }
+
+                // Désactiver le bouton pendant l'analyse
+                analyzeBtn.disabled = true;
+                analyzeBtn.textContent = 'Analyse en cours...';
+
+                try {
+                    // Analyser le texte
+                    const analyzedData = analyzer.analyze(text);
+
+                    // Mettre à jour le store
+                    store.dispatch({ type: 'SET_ANALYZED_DATA', payload: analyzedData });
+
+                    // Cacher le bloc de texte et afficher le dashboard
+                    const inputBlock = document.querySelector('.bg-dark-200.rounded-lg.p-6.mb-8');
+                    if (inputBlock) {
+                        inputBlock.classList.add('hidden');
+                    }
+
+                    // Afficher les stats
+                    const statsBlock = document.getElementById('dashboard-stats');
+                    if (statsBlock) {
+                        statsBlock.classList.remove('hidden');
+                    }
+
+                } catch (error) {
+                    console.error('Erreur lors de l\'analyse:', error);
+                    this.showError('Erreur lors de l\'analyse');
+                } finally {
+                    // Réactiver le bouton
+                    analyzeBtn.disabled = false;
+                    analyzeBtn.textContent = 'Analyser';
+                }
+            });
+        }
+
+        // S'abonner aux changements d'état
+        store.subscribe(() => {
+            const state = store.getState();
+            // Mettre à jour les modules avec le nouvel état
+            Object.values(this.modules).forEach(module => {
+                if (module && module.update) {
+                    module.update(state);
+                }
+            });
         });
 
-        // Afficher la vue correspondante
-        const targetView = document.querySelector(`[data-view="${page}"]`);
-        if (targetView) {
-            targetView.classList.remove('hidden');
-        }
+        // Gérer la déconnexion
+        document.addEventListener('click', (e) => {
+            if (e.target.matches('#logout-button')) {
+                e.preventDefault();
+                navigationState.logout();
+            }
+        });
+    }
 
-        // Mettre à jour la vue dans le store
-        store.setCurrentView(page);
-
-        // Logique spécifique pour chaque page
-        switch (page) {
-            case 'dashboard':
-                document.getElementById('dashboard-view').classList.remove('hidden');
-                break;
-            case 'quick-analysis':
-                document.getElementById('input-view').classList.remove('hidden');
-                break;
-            case 'my-analysis':
-                navigationState.navigate('dashboard');
-                break;
-            case 'profile':
-            case 'subscription':
-                const tempView = document.createElement('div');
-                tempView.className = 'container mx-auto p-4 text-center text-gray-400';
-                tempView.innerHTML = `
-                    <div class="max-w-2xl mx-auto bg-dark-200 rounded-lg shadow p-6">
-                        <h2 class="text-2xl font-bold mb-4">Page ${page} en construction</h2>
-                        <p>Cette fonctionnalité sera bientôt disponible !</p>
-                    </div>
-                `;
-                const mainContent = document.getElementById('main-content');
-                if (mainContent) {
-                    mainContent.innerHTML = '';
-                    mainContent.appendChild(tempView);
-                }
-                break;
-        }
+    showError(message) {
+        const notification = document.createElement('div');
+        notification.className = 'fixed bottom-4 right-4 bg-red-500 text-white px-6 py-3 rounded-lg shadow-lg';
+        notification.textContent = message;
+        document.body.appendChild(notification);
+        setTimeout(() => notification.remove(), 3000);
     }
 }
 

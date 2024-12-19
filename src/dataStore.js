@@ -4,14 +4,16 @@ class Store extends EventEmitter {
     constructor() {
         super();
         this.state = {
+            user: null,
             rawText: '',
             analyzedData: null,
             ui: {
-                currentView: 'dashboard'
+                currentView: 'dashboard',
+                isAuthenticated: false
             }
         };
-        this.isOnline = false; // Mode hors ligne par défaut
         this.loadFromLocalStorage();
+        this.checkAuthState();
     }
 
     setState(newState) {
@@ -24,10 +26,31 @@ class Store extends EventEmitter {
         return this.state;
     }
 
+    // Gestion de l'authentification
+    checkAuthState() {
+        const token = localStorage.getItem('token');
+        const user = JSON.parse(localStorage.getItem('user') || 'null');
+        
+        this.setState({
+            user,
+            ui: {
+                ...this.state.ui,
+                isAuthenticated: !!token
+            }
+        });
+    }
+
     // Gestion du stockage local
     saveToLocalStorage() {
         try {
-            localStorage.setItem('dashboard_data', JSON.stringify(this.state));
+            const stateToSave = {
+                ...this.state,
+                ui: {
+                    ...this.state.ui,
+                    isAuthenticated: false // Ne pas sauvegarder l'état d'authentification
+                }
+            };
+            localStorage.setItem('dashboard_data', JSON.stringify(stateToSave));
         } catch (error) {
             console.error('Erreur lors de la sauvegarde locale:', error);
         }
@@ -37,59 +60,55 @@ class Store extends EventEmitter {
         try {
             const savedData = localStorage.getItem('dashboard_data');
             if (savedData) {
-                this.state = JSON.parse(savedData);
+                const parsedData = JSON.parse(savedData);
+                this.state = {
+                    ...parsedData,
+                    user: null, // Réinitialiser l'utilisateur
+                    ui: {
+                        ...parsedData.ui,
+                        isAuthenticated: false // Réinitialiser l'authentification
+                    }
+                };
             }
         } catch (error) {
             console.error('Erreur lors du chargement des données locales:', error);
         }
     }
 
-    // Méthodes existantes
-    setRawText(text) {
-        this.setState({ rawText: text });
-    }
-
-    setAnalyzedData(data) {
-        this.setState({ analyzedData: data });
-    }
-
-    setCurrentView(view) {
-        this.setState({
-            ui: {
-                ...this.state.ui,
-                currentView: view
-            }
-        });
-    }
-
-    // Nouvelles méthodes pour le backend (préparées mais non utilisées pour l'instant)
-    async saveData(data) {
-        // Sauvegarde toujours en local d'abord
-        this.setState(data);
-
-        // Si online et connecté, tente de sauvegarder sur le serveur
-        if (this.isOnline && this.isLoggedIn()) {
-            try {
-                await fetch('/api/dashboard/save', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${this.getToken()}`
-                    },
-                    body: JSON.stringify(data)
+    // Actions
+    dispatch(action) {
+        switch (action.type) {
+            case 'SET_USER':
+                this.setState({ user: action.payload });
+                break;
+            case 'SET_RAW_TEXT':
+                this.setState({ rawText: action.payload });
+                break;
+            case 'SET_ANALYZED_DATA':
+                this.setState({ analyzedData: action.payload });
+                break;
+            case 'SET_CURRENT_VIEW':
+                this.setState({
+                    ui: {
+                        ...this.state.ui,
+                        currentView: action.payload
+                    }
                 });
-            } catch (error) {
-                console.log('Mode hors ligne : sauvegarde locale uniquement');
-            }
+                break;
+            case 'LOGOUT':
+                localStorage.removeItem('token');
+                localStorage.removeItem('user');
+                this.setState({
+                    user: null,
+                    ui: {
+                        ...this.state.ui,
+                        isAuthenticated: false
+                    }
+                });
+                break;
+            default:
+                console.warn('Action non reconnue:', action.type);
         }
-    }
-
-    isLoggedIn() {
-        return !!localStorage.getItem('auth_token');
-    }
-
-    getToken() {
-        return localStorage.getItem('auth_token');
     }
 }
 

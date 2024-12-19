@@ -1,41 +1,71 @@
 import { store } from './dataStore.js';
+import { navigationState } from './navigation.js';
+import { analyzer } from './analyzer.js';
 
 class UIManager {
     constructor() {
+        this.initialize();
+    }
+
+    initialize() {
         this._initializeElements();
         this._initializeEventListeners();
-        this.initialize();
     }
 
     _initializeElements() {
         this.elements = {
-            inputView: document.getElementById('input-view'),
             dashboardView: document.getElementById('dashboard-view'),
             dashboardStats: document.getElementById('dashboard-stats'),
-            inputText: document.getElementById('input-text'),
-            analyzeBtn: document.getElementById('analyze-btn')
+            inputTextDashboard: document.getElementById('input-text-dashboard'),
+            analyzeBtnDashboard: document.getElementById('analyze-btn-dashboard')
         };
 
-        if (!Object.values(this.elements).every(element => element)) {
-            throw new Error('Certains éléments UI nécessaires n\'ont pas été trouvés');
+        // Vérifier uniquement les éléments essentiels
+        const requiredElements = ['dashboardView', 'dashboardStats', 'inputTextDashboard', 'analyzeBtnDashboard'];
+        const missingElements = requiredElements.filter(el => !this.elements[el]);
+        
+        if (missingElements.length > 0) {
+            console.error('Éléments manquants:', missingElements);
+            return;
         }
     }
 
     _initializeEventListeners() {
         // Écouter les changements dans la zone de texte
-        this.elements.inputText.addEventListener('input', (e) => {
+        this.elements.inputTextDashboard.addEventListener('input', (e) => {
             store.dispatch({ type: 'SET_RAW_TEXT', payload: e.target.value });
         });
 
         // Écouter le clic sur le bouton d'analyse
-        this.elements.analyzeBtn.addEventListener('click', () => {
-            if (this.elements.inputText.value.trim()) {
-                const state = store.getState();
-                if (state.ui.currentView !== 'dashboard') {
-                    this.showDashboard();
-                }
-            } else {
+        this.elements.analyzeBtnDashboard.addEventListener('click', async () => {
+            const text = this.elements.inputTextDashboard.value.trim();
+            if (!text) {
                 this._showError('Veuillez entrer du texte à analyser');
+                return;
+            }
+
+            try {
+                // Désactiver le bouton pendant l'analyse
+                this.elements.analyzeBtnDashboard.disabled = true;
+                this.elements.analyzeBtnDashboard.textContent = 'Analyse en cours...';
+
+                // Faire l'analyse localement
+                const analyzedData = analyzer.analyze(text);
+                
+                // Sauvegarder dans le store
+                store.dispatch({ type: 'SET_RAW_TEXT', payload: text });
+                store.dispatch({ type: 'SET_ANALYZED_DATA', payload: analyzedData });
+
+                // Mettre à jour l'interface avec les résultats
+                this._updateAnalysisResults(analyzedData);
+
+            } catch (error) {
+                console.error('Erreur:', error);
+                this._showError('Erreur lors de l\'analyse');
+            } finally {
+                // Réactiver le bouton
+                this.elements.analyzeBtnDashboard.disabled = false;
+                this.elements.analyzeBtnDashboard.textContent = 'Analyser';
             }
         });
 
@@ -45,75 +75,72 @@ class UIManager {
         });
     }
 
-    initialize() {
-        this.initializeModules();
-        this.setupModeIndicator();
-    }
-
-    setupModeIndicator() {
-        // Ajouter l'indicateur de mode (local/online) dans le header
-        const header = document.querySelector('.header-right');
-        if (header) {
-            const modeIndicator = document.createElement('div');
-            modeIndicator.className = 'text-sm text-gray-400 ml-2';
-            modeIndicator.textContent = 'Mode local';
-            header.appendChild(modeIndicator);
-        }
-    }
-
-    initializeModules() {
-        // Cette méthode est vide pour le moment, mais vous pouvez l'utiliser pour initialiser vos modules
-    }
-
     _updateUI(state) {
-        const currentView = state.ui.currentView;
-        
-        // Mettre à jour la visibilité des vues
-        if (currentView === 'input') {
-            this._showInputView();
-        } else if (currentView === 'dashboard') {
-            this._showDashboardView();
+        // Mettre à jour l'interface en fonction de l'état
+        if (state.analyzedData) {
+            this._updateAnalysisResults(state.analyzedData);
         }
     }
 
-    _showInputView() {
-        this.elements.inputView.classList.remove('hidden');
-        this.elements.dashboardView.classList.add('hidden');
-    }
+    _updateAnalysisResults(data) {
+        // Mettre à jour les statistiques dans le dashboard
+        if (this.elements.dashboardStats) {
+            // Créer un élément pour afficher les résultats
+            const resultsElement = document.createElement('div');
+            resultsElement.className = 'grid gap-4';
+            
+            // Afficher les informations de la boutique
+            if (data.boutique) {
+                const boutiqueInfo = document.createElement('div');
+                boutiqueInfo.className = 'bg-dark-200 p-4 rounded-lg';
+                boutiqueInfo.innerHTML = `
+                    <h3 class="text-lg font-semibold mb-2">Informations de la boutique</h3>
+                    <p>Nom: ${data.boutique.nom || 'Non spécifié'}</p>
+                    <p>Username: ${data.boutique.username || 'Non spécifié'}</p>
+                    <p>Localisation: ${data.boutique.localisation.ville || 'Non spécifiée'}</p>
+                    <p>Abonnés: ${data.boutique.stats.abonnes}</p>
+                    <p>Articles actifs: ${data.boutique.stats.articlesActifs}</p>
+                    <p>Note: ${data.boutique.stats.note}</p>
+                `;
+                resultsElement.appendChild(boutiqueInfo);
+            }
 
-    _showDashboardView() {
-        this.elements.inputView.classList.add('hidden');
-        this.elements.dashboardView.classList.remove('hidden');
-    }
+            // Afficher les ventes
+            if (data.ventes && data.ventes.length > 0) {
+                const ventesInfo = document.createElement('div');
+                ventesInfo.className = 'bg-dark-200 p-4 rounded-lg';
+                ventesInfo.innerHTML = `
+                    <h3 class="text-lg font-semibold mb-2">Dernières ventes</h3>
+                    <ul class="space-y-2">
+                        ${data.ventes.map(vente => `
+                            <li class="border-b border-dark-300 pb-2">
+                                Date: ${vente.date || 'Non spécifiée'}<br>
+                                Prix: ${vente.prix || 'Non spécifié'}
+                            </li>
+                        `).join('')}
+                    </ul>
+                `;
+                resultsElement.appendChild(ventesInfo);
+            }
 
-    showInput() {
-        store.dispatch({ type: 'SET_CURRENT_VIEW', payload: 'input' });
-    }
-
-    showDashboard() {
-        store.dispatch({ type: 'SET_CURRENT_VIEW', payload: 'dashboard' });
-    }
-
-    // Méthode pour ajouter un module au dashboard
-    addModule(moduleElement) {
-        if (!moduleElement) {
-            console.error('Tentative d\'ajout d\'un module null');
-            return;
-        }
-        
-        this.elements.dashboardStats.appendChild(moduleElement);
-    }
-
-    // Méthode pour nettoyer le dashboard
-    clearDashboard() {
-        while (this.elements.dashboardStats.firstChild) {
-            this.elements.dashboardStats.removeChild(this.elements.dashboardStats.firstChild);
+            // Vider le conteneur et ajouter les nouveaux résultats
+            this.elements.dashboardStats.innerHTML = '';
+            this.elements.dashboardStats.appendChild(resultsElement);
         }
     }
 
     _showError(message) {
-        console.error(message);
-        // Vous pouvez ajouter ici une notification visuelle pour l'utilisateur
+        // Créer une notification d'erreur
+        const notification = document.createElement('div');
+        notification.className = 'fixed bottom-4 right-4 bg-red-500 text-white px-6 py-3 rounded-lg shadow-lg';
+        notification.textContent = message;
+
+        document.body.appendChild(notification);
+
+        // Supprimer la notification après 3 secondes
+        setTimeout(() => {
+            notification.remove();
+        }, 3000);
     }
 }
 
