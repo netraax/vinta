@@ -7,6 +7,7 @@ import SalesStatsModule from './modules/SalesStatsModule.js';
 import ExpenseStatsModule from './modules/ExpenseStatsModule.js';
 import TotalStatsModule from './modules/TotalStatsModule.js';
 import AccountModule from './modules/AccountModule.js';
+import SalesChartModule from './modules/SalesChartModule.js';
 
 class App {
     constructor() {
@@ -38,6 +39,7 @@ class App {
         const expenseStatsModule = new ExpenseStatsModule();
         const totalStatsModule = new TotalStatsModule();
         const accountModule = new AccountModule();
+        const salesChartModule = new SalesChartModule();
 
         // Monter les modules
         document.getElementById('sidebar-container').appendChild(sidebarModule.getElement());
@@ -46,9 +48,12 @@ class App {
         // Créer un conteneur flex pour les stats
         const statsContainer = document.getElementById('dashboard-stats');
         statsContainer.className = 'flex gap-4 flex-wrap';
+        
+        // Ajouter les modules dans le nouvel ordre
+        statsContainer.appendChild(totalStatsModule.getElement());
         statsContainer.appendChild(salesStatsModule.getElement());
         statsContainer.appendChild(expenseStatsModule.getElement());
-        statsContainer.appendChild(totalStatsModule.getElement());
+        statsContainer.appendChild(salesChartModule.getElement());
         
         document.getElementById('input-container').appendChild(accountModule.getElement());
 
@@ -59,7 +64,8 @@ class App {
             salesStats: salesStatsModule,
             expenseStats: expenseStatsModule,
             totalStats: totalStatsModule,
-            account: accountModule
+            account: accountModule,
+            salesChart: salesChartModule
         };
 
         // Mettre à jour les informations utilisateur

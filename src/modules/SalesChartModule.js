@@ -73,16 +73,35 @@ class SalesChartModule {
                 this.updateStats();
             });
 
-            // Initialiser avec le dernier mois
-            const today = new Date();
-            const lastMonth = new Date();
-            lastMonth.setMonth(lastMonth.getMonth() - 1);
+            // Initialiser avec les dates des données
+            const data = store.getState().analyzedData;
+            if (data && data.ventes && data.ventes.length > 0) {
+                // Trier les ventes par date
+                const sortedVentes = [...data.ventes].sort((a, b) => new Date(b.date) - new Date(a.date));
+                const latestDate = new Date(sortedVentes[0].date);
+                const oneMonthAgo = new Date(latestDate);
+                oneMonthAgo.setMonth(oneMonthAgo.getMonth() - 1);
 
-            startDateInput.value = this.formatDateForInput(lastMonth);
-            endDateInput.value = this.formatDateForInput(today);
+                startDateInput.value = this.formatDateForInput(oneMonthAgo);
+                endDateInput.value = this.formatDateForInput(latestDate);
+                
+                this.startDate = oneMonthAgo;
+                this.endDate = latestDate;
+            } else {
+                // Fallback sur le dernier mois si pas de données
+                const today = new Date();
+                const lastMonth = new Date();
+                lastMonth.setMonth(lastMonth.getMonth() - 1);
+
+                startDateInput.value = this.formatDateForInput(lastMonth);
+                endDateInput.value = this.formatDateForInput(today);
+                
+                this.startDate = lastMonth;
+                this.endDate = today;
+            }
             
-            this.startDate = lastMonth;
-            this.endDate = today;
+            // Déclencher la mise à jour initiale
+            this.updateStats();
         }, 0);
 
         return container;
