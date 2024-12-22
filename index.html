@@ -6,6 +6,8 @@
     <title>VintedPro - Analyseur</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="src/styles/main.css">
+    <link rel="stylesheet" href="src/styles/brandTasks.css">
     <script>
         tailwind.config = {
             darkMode: 'class',
@@ -25,7 +27,18 @@
 </head>
 <body class="bg-dark-100 text-white">
     <!-- Sidebar -->
-    <div id="sidebar-container"></div>
+    <div class="dashboard-container">
+        <div id="sidebar-container"></div>
+        <div class="main-content">
+            <div class="module-grid">
+                <div id="total-stats-module" class="module"></div>
+                <div id="sales-stats-module" class="module"></div>
+                <div id="expense-stats-module" class="module"></div>
+                <div id="brand-tasks-module" class="module"></div>
+                <div id="sales-chart-module" class="module"></div>
+            </div>
+        </div>
+    </div>
 
     <!-- Main Content -->
     <div class="ml-64"> 

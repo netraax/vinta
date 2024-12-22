@@ -1,0 +1,59 @@
+:root {
+    /* Palette de couleurs principales */
+    --primary-gradient-start: #2563eb;
+    --primary-gradient-end: #3b82f6;
+    --secondary-gradient-start: #4f46e5;
+    --secondary-gradient-end: #6366f1;
+    --accent-gradient-start: #7c3aed;
+    --accent-gradient-end: #8b5cf6;
+    
+    /* Dégradés pour le fond */
+    --bg-dark-gradient-start: #1e293b;
+    --bg-dark-gradient-end: #0f172a;
+    
+    /* Dégradés pour les cartes */
+    --card-gradient-start: rgba(30, 41, 59, 0.8);
+    --card-gradient-end: rgba(15, 23, 42, 0.9);
+}
+
+/* Classes de dégradés réutilisables */
+.primary-gradient {
+    background: linear-gradient(135deg, var(--primary-gradient-start), var(--primary-gradient-end));
+}
+
+.secondary-gradient {
+    background: linear-gradient(135deg, var(--secondary-gradient-start), var(--secondary-gradient-end));
+}
+
+.accent-gradient {
+    background: linear-gradient(135deg, var(--accent-gradient-start), var(--accent-gradient-end));
+}
+
+.bg-gradient {
+    background: linear-gradient(135deg, var(--bg-dark-gradient-start), var(--bg-dark-gradient-end));
+}
+
+.card-gradient {
+    background: linear-gradient(135deg, var(--card-gradient-start), var(--card-gradient-end));
+}
+
+/* Effets de survol améliorés */
+.hover-gradient:hover {
+    filter: brightness(1.1);
+    transition: filter 0.3s ease;
+}
+
+/* Styles pour les boutons avec dégradés */
+.btn-gradient {
+    background: linear-gradient(135deg, var(--primary-gradient-start), var(--primary-gradient-end));
+    color: white;
+    padding: 0.5rem 1rem;
+    border-radius: 0.5rem;
+    transition: all 0.3s ease;
+}
+
+.btn-gradient:hover {
+    background: linear-gradient(135deg, var(--primary-gradient-end), var(--primary-gradient-start));
+    transform: translateY(-1px);
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}

@@ -1,0 +1,57 @@
+:root {
+    /* Dégradés Violet Pénombre */
+    --gradient-primary: linear-gradient(135deg, #7E22CE, #1E3A8A);
+    --gradient-intense: linear-gradient(135deg, #6B21A8, #172554);
+    --gradient-luminous: linear-gradient(135deg, #9333EA, #1E40AF);
+    --gradient-subtle: linear-gradient(135deg, rgba(126, 34, 206, 0.8), rgba(30, 58, 138, 0.8));
+}
+
+/* Classes utilitaires pour les dégradés */
+.bg-gradient-primary {
+    background-image: var(--gradient-primary);
+}
+
+.bg-gradient-intense {
+    background-image: var(--gradient-intense);
+}
+
+.bg-gradient-luminous {
+    background-image: var(--gradient-luminous);
+}
+
+.bg-gradient-subtle {
+    background-image: var(--gradient-subtle);
+}
+
+/* Classes pour le texte en dégradé */
+.text-gradient {
+    background-clip: text;
+    -webkit-background-clip: text;
+    color: transparent;
+}
+
+/* Classes pour les cartes avec dégradé */
+.card-gradient {
+    background-image: var(--gradient-subtle);
+    border: 1px solid rgba(126, 34, 206, 0.2);
+    backdrop-filter: blur(8px);
+}
+
+/* Effets de survol */
+.hover-gradient:hover {
+    filter: brightness(1.1);
+    transition: all 0.3s ease;
+}
+
+/* Classes pour les boutons avec dégradé */
+.btn-gradient {
+    background-image: var(--gradient-primary);
+    color: white;
+    transition: all 0.3s ease;
+}
+
+.btn-gradient:hover {
+    background-image: var(--gradient-intense);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(126, 34, 206, 0.3);
+}

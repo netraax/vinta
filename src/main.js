@@ -10,6 +10,7 @@ import AccountModule from './modules/AccountModule.js';
 import SalesChartModule from './modules/SalesChartModule.js';
 import EngagementModule from './modules/EngagementModule.js';
 import CountrySalesModule from './modules/CountrySalesModule.js';
+import BrandTasksModule from './modules/BrandTasksModule.js';
 
 class App {
     constructor() {
@@ -35,20 +36,33 @@ class App {
 
     initializeModules() {
         // Initialiser et monter les modules
-        const sidebarModule = new SidebarModule();
-        const profileModule = new ProfileModule();
-        const salesStatsModule = new SalesStatsModule();
-        const expenseStatsModule = new ExpenseStatsModule();
-        const totalStatsModule = new TotalStatsModule();
-        const accountModule = new AccountModule();
-        const salesChartModule = new SalesChartModule();
-        const engagementModule = new EngagementModule();
-        const countrySalesModule = new CountrySalesModule();
+        const sidebarModule = new SidebarModule('sidebar-container');
+        const profileModule = new ProfileModule('profile-container');
+        const salesStatsModule = new SalesStatsModule('sales-stats-module');
+        const expenseStatsModule = new ExpenseStatsModule('expense-stats-module');
+        const totalStatsModule = new TotalStatsModule('total-stats-module');
+        const accountModule = new AccountModule('account-module');
+        const salesChartModule = new SalesChartModule('sales-chart-module');
+        const engagementModule = new EngagementModule('engagement-module');
+        const countrySalesModule = new CountrySalesModule('country-sales-module');
+        const brandTasksModule = new BrandTasksModule('brand-tasks-module');
+
+        // Monter les modules dans le dashboard
+        const dashboardStats = document.getElementById('dashboard-stats');
+        if (dashboardStats) {
+            dashboardStats.innerHTML = `
+                <div id="total-stats-module" class="module"></div>
+                <div id="sales-stats-module" class="module"></div>
+                <div id="expense-stats-module" class="module"></div>
+                <div id="brand-tasks-module" class="module"></div>
+                <div id="sales-chart-module" class="module"></div>
+            `;
+        }
 
         // Monter les modules
         document.getElementById('sidebar-container').appendChild(sidebarModule.getElement());
         document.getElementById('profile-container').appendChild(profileModule.getElement());
-        
+
         // Créer un conteneur flex pour les stats avec une meilleure organisation
         const statsContainer = document.getElementById('dashboard-stats');
         statsContainer.style.display = 'grid';
@@ -92,6 +106,12 @@ class App {
         statsContainer.appendChild(salesChartModule.getElement());
         statsContainer.appendChild(countrySalesModule.getElement());
         
+        // Ajouter le nouveau module des marques à la fin
+        const brandContainer = document.createElement('div');
+        brandContainer.style.gridColumn = '1 / -1'; // Prend toute la largeur
+        brandContainer.appendChild(brandTasksModule.getElement());
+        statsContainer.appendChild(brandContainer);
+        
         document.getElementById('input-container').appendChild(accountModule.getElement());
 
         // Stocker les références des modules
@@ -104,7 +124,8 @@ class App {
             account: accountModule,
             salesChart: salesChartModule,
             engagement: engagementModule,
-            countrySales: countrySalesModule
+            countrySales: countrySalesModule,
+            brandTasks: brandTasksModule
         };
 
         // Mettre à jour les informations utilisateur
