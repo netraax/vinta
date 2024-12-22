@@ -52,7 +52,7 @@ class SalesChartModule {
                     <div class="text-3xl font-bold text-emerald-400" id="period-sales-revenue">-</div>
                     <div class="text-sm text-gray-400 ml-2">revenus sur la période</div>
                 </div>
-                <div class="flex-grow relative">
+                <div class="relative h-48">
                     <canvas id="sales-period-chart" class="absolute inset-0"></canvas>
                 </div>
             </div>
@@ -251,7 +251,8 @@ class SalesChartModule {
                 },
                 options: {
                     responsive: true,
-                    maintainAspectRatio: false,
+                    maintainAspectRatio: true,
+                    aspectRatio: 2.8,
                     plugins: {
                         legend: { display: false },
                         tooltip: {

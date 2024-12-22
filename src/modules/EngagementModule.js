@@ -10,9 +10,9 @@ class EngagementModule {
 
     createModule() {
         const module = document.createElement('div');
-        module.className = 'bg-dark-800 rounded-lg shadow-lg p-6 h-full w-64 transform transition-all duration-300 hover:scale-105 hover:shadow-xl';
+        module.className = 'bg-dark-800 rounded-lg shadow-lg p-4 h-full w-64 transform transition-all duration-300 hover:scale-105 hover:shadow-xl';
         module.innerHTML = `
-            <div class="flex items-center justify-between mb-4">
+            <div class="flex items-center justify-between mb-2">
                 <h2 class="text-lg font-semibold text-gray-200 flex items-center">
                     <svg class="w-5 h-5 text-gray-400 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
@@ -22,7 +22,7 @@ class EngagementModule {
                 </h2>
             </div>
 
-            <div class="flex justify-between text-xs mb-6">
+            <div class="flex justify-between text-xs mb-4">
                 <div class="text-center">
                     <span class="text-violet-400">Vues</span>
                     <div id="totalViews" class="text-violet-300 font-bold text-lg">0</div>
@@ -33,15 +33,15 @@ class EngagementModule {
                 </div>
             </div>
 
-            <div class="relative h-52 mb-4">
+            <div class="relative h-40 mb-2">
                 <canvas id="engagementChart"></canvas>
                 <div class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-center">
-                    <span id="engagementRate" class="text-4xl font-bold text-gray-200">0%</span>
+                    <span id="engagementRate" class="text-2xl font-bold text-gray-200">0%</span>
                     <p class="text-xs text-gray-400 mt-1">Taux de conversion</p>
                 </div>
             </div>
 
-            <div class="mt-2">
+            <div class="mt-1">
                 <p id="performanceMessage" class="text-sm text-center font-medium"></p>
             </div>
         `;
