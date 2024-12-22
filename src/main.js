@@ -8,6 +8,7 @@ import ExpenseStatsModule from './modules/ExpenseStatsModule.js';
 import TotalStatsModule from './modules/TotalStatsModule.js';
 import AccountModule from './modules/AccountModule.js';
 import SalesChartModule from './modules/SalesChartModule.js';
+import EngagementModule from './modules/EngagementModule.js';
 
 class App {
     constructor() {
@@ -40,19 +41,47 @@ class App {
         const totalStatsModule = new TotalStatsModule();
         const accountModule = new AccountModule();
         const salesChartModule = new SalesChartModule();
+        const engagementModule = new EngagementModule();
 
         // Monter les modules
         document.getElementById('sidebar-container').appendChild(sidebarModule.getElement());
         document.getElementById('profile-container').appendChild(profileModule.getElement());
         
-        // Créer un conteneur flex pour les stats
+        // Créer un conteneur flex pour les stats avec une meilleure organisation
         const statsContainer = document.getElementById('dashboard-stats');
-        statsContainer.className = 'flex gap-4 flex-wrap';
+        statsContainer.style.display = 'grid';
+        statsContainer.style.gap = '2px';
+        statsContainer.style.gridTemplateColumns = 'auto auto auto 300px';
+        statsContainer.style.gridTemplateRows = 'auto 1fr';
+        statsContainer.style.justifyContent = 'start';
         
-        // Ajouter les modules dans le nouvel ordre
+        // Appliquer les styles de grid-area à chaque module
+        totalStatsModule.getElement().style.gridArea = '1 / 1';
+        salesStatsModule.getElement().style.gridArea = '1 / 2';
+        expenseStatsModule.getElement().style.gridArea = '1 / 3';
+        engagementModule.getElement().style.gridArea = '1 / 4 / 3 / 5';
+        salesChartModule.getElement().style.gridArea = '2 / 1 / 3 / 4';
+        
+        // Ajuster les styles des modules du haut
+        [totalStatsModule, salesStatsModule, expenseStatsModule].forEach(module => {
+            const element = module.getElement();
+            element.style.margin = '0';
+        });
+        
+        // Styles pour le module d'engagement
+        const engagementElement = engagementModule.getElement();
+        engagementElement.style.margin = '0';
+        engagementElement.style.height = 'fit-content';
+        
+        // Styles pour le graphique
+        const chartElement = salesChartModule.getElement();
+        chartElement.style.margin = '2px 0 0 0';
+        
+        // Ajouter les modules dans le conteneur
         statsContainer.appendChild(totalStatsModule.getElement());
         statsContainer.appendChild(salesStatsModule.getElement());
         statsContainer.appendChild(expenseStatsModule.getElement());
+        statsContainer.appendChild(engagementModule.getElement());
         statsContainer.appendChild(salesChartModule.getElement());
         
         document.getElementById('input-container').appendChild(accountModule.getElement());
@@ -65,7 +94,8 @@ class App {
             expenseStats: expenseStatsModule,
             totalStats: totalStatsModule,
             account: accountModule,
-            salesChart: salesChartModule
+            salesChart: salesChartModule,
+            engagement: engagementModule
         };
 
         // Mettre à jour les informations utilisateur

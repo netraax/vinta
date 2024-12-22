@@ -14,14 +14,14 @@ class UIManager {
 
     _initializeElements() {
         this.elements = {
-            dashboardView: document.getElementById('dashboard-view'),
+            inputView: document.getElementById('input-view'),
             dashboardStats: document.getElementById('dashboard-stats'),
-            inputTextDashboard: document.getElementById('input-text-dashboard'),
-            analyzeBtnDashboard: document.getElementById('analyze-btn-dashboard')
+            inputText: document.getElementById('input-text'),
+            analyzeBtn: document.getElementById('analyze-btn')
         };
 
         // Vérifier uniquement les éléments essentiels
-        const requiredElements = ['dashboardView', 'dashboardStats', 'inputTextDashboard', 'analyzeBtnDashboard'];
+        const requiredElements = ['inputView', 'dashboardStats', 'inputText', 'analyzeBtn'];
         const missingElements = requiredElements.filter(el => !this.elements[el]);
         
         if (missingElements.length > 0) {
@@ -32,13 +32,13 @@ class UIManager {
 
     _initializeEventListeners() {
         // Écouter les changements dans la zone de texte
-        this.elements.inputTextDashboard.addEventListener('input', (e) => {
+        this.elements.inputText.addEventListener('input', (e) => {
             store.dispatch({ type: 'SET_RAW_TEXT', payload: e.target.value });
         });
 
         // Écouter le clic sur le bouton d'analyse
-        this.elements.analyzeBtnDashboard.addEventListener('click', async () => {
-            const text = this.elements.inputTextDashboard.value.trim();
+        this.elements.analyzeBtn.addEventListener('click', async () => {
+            const text = this.elements.inputText.value.trim();
             if (!text) {
                 this._showError('Veuillez entrer du texte à analyser');
                 return;
@@ -56,8 +56,8 @@ class UIManager {
     async _handleAnalysis(text) {
         try {
             // Désactiver le bouton pendant l'analyse
-            this.elements.analyzeBtnDashboard.disabled = true;
-            this.elements.analyzeBtnDashboard.textContent = 'Analyse en cours...';
+            this.elements.analyzeBtn.disabled = true;
+            this.elements.analyzeBtn.textContent = 'Analyse en cours...';
 
             // Analyser le texte
             const analyzedData = analyzer.analyze(text);
@@ -79,8 +79,8 @@ class UIManager {
             this._showError('Erreur lors de l\'analyse');
         } finally {
             // Réactiver le bouton
-            this.elements.analyzeBtnDashboard.disabled = false;
-            this.elements.analyzeBtnDashboard.textContent = 'Analyser';
+            this.elements.analyzeBtn.disabled = false;
+            this.elements.analyzeBtn.textContent = 'Analyser';
         }
     }
 

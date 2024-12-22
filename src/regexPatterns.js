@@ -19,14 +19,7 @@ const patterns = {
 
     // Ventes
     venteAvecDate: /(?:Vente|Paiements de Vinted)\n([^€\n]+)\n(\d+[,.]\d{2}) ?€\n(\d{1,2} \w+ 2024)/g,
-    venteStat: new RegExp([
-        '([^,]+?),\\s*',
-        'prix\\s*:\\s*(\\d+[.,]\\d+)\\s*€,\\s*',
-        'marque\\s*:\\s*([^,]+?),\\s*',
-        'Vendu[^]*?',
-        '(\\d+)\\s*vues[^]*?',
-        '(\\d+)\\s*favoris'
-    ].join(''), 'g'),
+    venteStat: /([^,]+), prix : (\d+[,.]\d{2}) €, marque : ([^\n]+?)(?:, taille[^\n]+)?\nVendu\n(\d+) vues\n\n(\d+) favoris/g,
 
     // Marketing et finances
     boost: /(\d{1,2} \w+ 2024)\nCommande d'un Boost[^€]*-(\d+[,.]\d{2}) ?€/g,

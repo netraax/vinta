@@ -5,11 +5,9 @@ const transformers = {
         return parseFloat(priceStr.replace(',', '.'));
     },
     formatDate(dateStr) {
-        // Si la date est déjà au format "28 novembre 2024", on la retourne telle quelle
         if (/^\d{1,2} \w+ 2024$/.test(dateStr)) {
             return dateStr;
         }
-        // Sinon on la transforme
         const date = new Date(dateStr);
         return date.toLocaleDateString('fr-FR', {
             day: 'numeric',
@@ -72,7 +70,7 @@ class VintedAnalyzer {
     analyze(text) {
         try {
             console.group('🔍 Analyse du texte Vinted');
-            console.log('Longueur du texte:', text.length, 'caractères');
+            console.log('📝 Longueur du texte:', text.length, 'caractères');
             
             this._extractBoutiqueInfo(text);
             this._extractVentes(text);
@@ -80,26 +78,65 @@ class VintedAnalyzer {
             this._extractFinances(text);
             this._extractDepenses(text);
 
-            console.log('✅ Résultat de l\'analyse:', {
-                boutique: {
-                    ...this.result.boutique,
-                    stats: this.result.boutique.stats
-                },
-                ventes: {
-                    total: this.result.ventes.length,
-                    dernières: this.result.ventes.slice(-3)
-                },
-                marketing: {
-                    boosts: this.result.marketing.boosts.length,
-                    vitrine: this.result.marketing.dressingVitrine.length
-                },
-                finances: {
-                    transferts: this.result.finances.transferts.length,
-                    solde: this.result.finances.soldeActuel
-                },
-                depenses: this.result.depenses.length
+            console.group('📊 Résumé de l\'analyse');
+
+            console.group('🏪 Informations Boutique');
+            console.log('Nom:', this.result.boutique.nom);
+            console.log('Username:', this.result.boutique.username);
+            console.log('Localisation:', this.result.boutique.localisation.ville, this.result.boutique.localisation.pays);
+            console.log('Contact:', {
+                email: this.result.boutique.contact.email,
+                telephone: this.result.boutique.contact.telephone
+            });
+            console.log('Stats:', {
+                abonnés: this.result.boutique.stats.abonnes,
+                articlesActifs: this.result.boutique.stats.articlesActifs,
+                note: this.result.boutique.stats.note
             });
             console.groupEnd();
+
+            console.group('💰 Ventes');
+            console.log('Nombre total de ventes:', this.result.ventes.length);
+            console.log('Dernières ventes:', this.result.ventes.slice(-3));
+            console.log('Stats détaillées:', {
+                totalVentes: this.result.ventes_stat.length,
+                totalVues: this.result.ventes_stat.reduce((acc, v) => acc + (parseInt(v.vues) || 0), 0),
+                totalFavoris: this.result.ventes_stat.reduce((acc, v) => acc + (parseInt(v.favoris) || 0), 0)
+            });
+            console.groupEnd();
+
+            console.group('📢 Marketing');
+            console.log('Boosts:', {
+                nombre: this.result.marketing.boosts.length,
+                derniers: this.result.marketing.boosts.slice(-3)
+            });
+            console.log('Dressing en vitrine:', {
+                nombre: this.result.marketing.dressingVitrine.length,
+                derniers: this.result.marketing.dressingVitrine.slice(-3)
+            });
+            console.groupEnd();
+
+            console.group('💶 Finances');
+            console.log('Transferts:', {
+                nombre: this.result.finances.transferts.length,
+                derniers: this.result.finances.transferts.slice(-3)
+            });
+            console.log('Solde actuel:', this.result.finances.soldeActuel.toFixed(2) + ' €');
+            console.groupEnd();
+
+            console.group('💸 Dépenses');
+            console.log('Nombre total de dépenses:', this.result.depenses.length);
+            const totalDepenses = this.result.depenses.reduce((acc, d) => acc + d.montant, 0);
+            console.log('Total dépenses:', totalDepenses.toFixed(2) + ' €');
+            console.log('Répartition:', {
+                boosts: this.result.depenses.filter(d => d.type === 'boost').length,
+                vitrine: this.result.depenses.filter(d => d.type === 'vitrine').length,
+                transferts: this.result.depenses.filter(d => d.type === 'transfert').length
+            });
+            console.groupEnd();
+
+            console.groupEnd(); // Fin du résumé
+            console.groupEnd(); // Fin de l'analyse
 
             return this.result;
         } catch (error) {
@@ -133,13 +170,11 @@ class VintedAnalyzer {
         this.result.boutique.stats.abonnes = parseInt(extractors.extract(patterns.abonnes, text) || '0');
         this.result.boutique.stats.articlesActifs = parseInt(extractors.extract(patterns.articlesActifs, text) || '0');
 
-        // Extraction de la note
         const note = extractors.extract(patterns.note, text);
         if (note) {
             this.result.boutique.stats.note = parseFloat(note);
         }
 
-        // Analyse des commentaires pour les ventes par pays
         const commentaires = [];
         let match;
         while ((match = patterns.commentaire.exec(text)) !== null) {
@@ -187,14 +222,12 @@ class VintedAnalyzer {
         };
 
         commentaires.forEach(commentaire => {
-            // Vérifier la langue du commentaire
             if (patterns.italie.test(commentaire)) ventesParPays.italie++;
             if (patterns.espagne.test(commentaire)) ventesParPays.espagne++;
             if (patterns.allemagne.test(commentaire)) ventesParPays.allemagne++;
             if (patterns.republiqueTcheque.test(commentaire)) ventesParPays.republiqueTcheque++;
             if (patterns.lituanie.test(commentaire)) ventesParPays.lituanie++;
             if (patterns.anglais.test(commentaire)) {
-                // Les commentaires en anglais sont comptés pour Pays-Bas et Royaume-Uni
                 ventesParPays.paysBas++;
                 ventesParPays.royaumeUni++;
             }
@@ -206,9 +239,9 @@ class VintedAnalyzer {
     _extractVentes(text) {
         console.group('💰 Extraction des ventes');
         
-        // Ventes avec date (ventes réelles)
+        // 1. Extraction des ventes confirmées (pour CA)
         const ventesMatches = extractors.extractAll(patterns.venteAvecDate, text);
-        console.log('Matches trouvés:', ventesMatches.length);
+        console.log('📊 Ventes confirmées trouvées:', ventesMatches.length);
         ventesMatches.forEach((match, i) => {
             console.log(`Match ${i + 1}:`, {
                 full: match[0],
@@ -224,7 +257,40 @@ class VintedAnalyzer {
             date: transformers.formatDate(match[3])
         }));
 
-        // Affichage des ventes réelles
+        // 2. Extraction des stats de vente
+        console.group('🔍 Débogage extraction stats');
+        console.log('Pattern venteStat:', patterns.venteStat);
+        
+        // Recherche d'un exemple de texte qui pourrait correspondre
+        const texteSample = text.slice(0, 1000);
+        console.log('Échantillon de texte à analyser:', texteSample);
+        
+        const ventesStatMatches = extractors.extractAll(patterns.venteStat, text);
+        console.log('📈 Stats de ventes trouvées:', ventesStatMatches.length);
+        
+        if (ventesStatMatches.length > 0) {
+            console.log('Premier match trouvé:', ventesStatMatches[0]);
+        } else {
+            console.log('❌ Aucun match trouvé pour les stats');
+            // Recherche de motifs similaires
+            const simpleVuesPattern = /(\d+)\s*vues/g;
+            const vuesMatches = text.match(simpleVuesPattern);
+            console.log('Nombre de "vues" trouvées avec pattern simple:', vuesMatches ? vuesMatches.length : 0);
+            if (vuesMatches) {
+                console.log('Exemples de matches "vues":', vuesMatches.slice(0, 3));
+            }
+        }
+        console.groupEnd();
+
+        this.result.ventes_stat = ventesStatMatches.map(match => ({
+            nom: match[1].trim(),
+            prix: transformers.parsePrice(match[2]),
+            marque: match[3].trim(),
+            vues: match[4],
+            favoris: match[5]
+        }));
+
+        // Afficher les résumés
         console.group('📅 Ventes réelles (transactions validées)');
         console.log('Nombre total de ventes:', this.result.ventes.length);
         if (this.result.ventes.length > 0) {
@@ -235,20 +301,42 @@ class VintedAnalyzer {
         }
         console.groupEnd();
 
+        console.group('📊 Statistiques des ventes');
+        console.log('Nombre d\'articles avec stats:', this.result.ventes_stat.length);
+        if (this.result.ventes_stat.length > 0) {
+            const totalVues = this.result.ventes_stat.reduce((sum, v) => sum + parseInt(v.vues), 0);
+            const totalFavoris = this.result.ventes_stat.reduce((sum, v) => sum + parseInt(v.favoris), 0);
+            const tauxEngagement = totalVues > 0 ? (totalFavoris / totalVues * 100).toFixed(2) : 0;
+
+            console.log('Statistiques globales:', {
+                totalVues,
+                totalFavoris,
+                tauxEngagement: tauxEngagement + '%',
+                vueMoyenneParArticle: (totalVues / this.result.ventes_stat.length).toFixed(1),
+                favorisMoyenParArticle: (totalFavoris / this.result.ventes_stat.length).toFixed(1)
+            });
+
+            console.log('Top 5 articles par vues:');
+            console.table(
+                [...this.result.ventes_stat]
+                    .sort((a, b) => parseInt(b.vues) - parseInt(a.vues))
+                    .slice(0, 5)
+            );
+        }
         console.groupEnd();
+
+        console.groupEnd(); // Fin de l'extraction des ventes
     }
 
     _extractMarketing(text) {
         console.group('📢 Extraction marketing');
         
-        // Boosts
         const boostMatches = extractors.extractAll(patterns.boost, text);
         this.result.marketing.boosts = boostMatches.map(match => ({
             date: transformers.formatDate(match[1]),
             montant: transformers.parsePrice(match[2])
         }));
 
-        // Dressing en vitrine
         const vitrineMatches = extractors.extractAll(patterns.vitrine, text);
         this.result.marketing.dressingVitrine = vitrineMatches.map(match => ({
             date: transformers.formatDate(match[1]),
@@ -265,14 +353,12 @@ class VintedAnalyzer {
     _extractFinances(text) {
         console.group('💶 Extraction finances');
         
-        // Transferts
         const transfertMatches = extractors.extractAll(patterns.transfert, text);
         this.result.finances.transferts = transfertMatches.map(match => ({
             date: transformers.formatDate(match[1]),
             montant: transformers.parsePrice(match[2])
         }));
 
-        // Solde actuel
         const soldeMatch = extractors.extract(patterns.solde, text);
         if (soldeMatch) {
             this.result.finances.soldeActuel = transformers.parsePrice(soldeMatch);
@@ -289,7 +375,6 @@ class VintedAnalyzer {
         const depenses = [];
         let match;
         
-        // Extraire les boosts
         while ((match = patterns.boost.exec(text)) !== null) {
             depenses.push({
                 type: 'boost',
@@ -298,7 +383,6 @@ class VintedAnalyzer {
             });
         }
         
-        // Extraire les vitrines
         while ((match = patterns.vitrine.exec(text)) !== null) {
             depenses.push({
                 type: 'vitrine',
