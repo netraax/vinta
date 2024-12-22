@@ -12,19 +12,19 @@ export default class CountrySalesModule {
         const module = document.createElement('div');
         module.className = 'bg-dark-800 rounded-lg shadow-lg p-4 h-full w-64 transform transition-all duration-300 hover:scale-105 hover:shadow-xl';
         module.innerHTML = `
-            <div class="flex items-center justify-between mb-2">
-                <h2 class="text-lg font-semibold text-gray-200 flex items-center">
-                    <svg class="w-5 h-5 text-gray-400 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div class="flex items-center justify-between mb-4">
+                <div class="flex items-center space-x-2">
+                    <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
                     </svg>
-                    Ventes par Pays
-                </h2>
+                    <h2 class="text-lg font-semibold text-gray-200">Distribution Géographique</h2>
+                </div>
             </div>
-            <div class="relative h-40">
+            <div class="relative h-40 mb-2">
                 <canvas id="countrySalesChart"></canvas>
             </div>
-            <div class="mt-1 text-xs text-gray-400 text-center">
-                <span id="totalCountries">0 pays</span>
+            <div class="flex items-center justify-center text-xs text-gray-400 mt-2">
+                <span id="totalCountries" class="inline-flex items-center px-2 py-1 bg-indigo-900/30 text-indigo-300 rounded-full"></span>
             </div>
         `;
         return module;
@@ -38,20 +38,29 @@ export default class CountrySalesModule {
         const state = store.getState();
         const { analyzedData } = state;
 
-        if (!analyzedData || !analyzedData.ventes_stat) return;
+        if (!analyzedData || !analyzedData.boutique || !analyzedData.boutique.stats) return;
 
-        // Compter les ventes par pays
-        const salesByCountry = analyzedData.ventes_stat.reduce((acc, vente) => {
-            const pays = vente.pays || 'Inconnu';
-            acc[pays] = (acc[pays] || 0) + 1;
-            return acc;
-        }, {});
+        // Récupérer toutes les ventes, y compris celles de la France
+        const ventesTotales = analyzedData.boutique.stats.ventesTotales || {};
+        
+        // Calculer le total des ventes (France + International)
+        const totalVentes = Object.values(ventesTotales).reduce((acc, count) => acc + count, 0);
+        const ventesFrance = ventesTotales.france || 0;
+        const ventesInternationales = totalVentes - ventesFrance;
+        
+        // Calculer et afficher le pourcentage de ventes internationales
+        let message = '';
+        if (totalVentes === 0) {
+            message = 'Pas de ventes';
+        } else {
+            const pourcentage = (ventesInternationales / totalVentes * 100).toFixed(0);
+            message = `${pourcentage}% à l'international`;
+        }
+        document.getElementById('totalCountries').textContent = message;
 
-        // Mettre à jour le nombre total de pays
-        const nombrePays = Object.keys(salesByCountry).length;
-        document.getElementById('totalCountries').textContent = `${nombrePays} pays`;
-
-        // Mettre à jour le graphique
+        // Pour le graphique, on n'utilise que les ventes internationales
+        const salesByCountry = { ...ventesTotales };
+        delete salesByCountry.france;  // Retirer la France du graphique
         this.updateChart(salesByCountry);
     }
 
@@ -62,66 +71,100 @@ export default class CountrySalesModule {
             this.chart.destroy();
         }
 
+        // Préparer les données pour le graphique
+        const labels = [];
+        const data = [];
+        const rawData = {};  // Pour stocker les valeurs brutes
+
+        // Créer un dégradé de bleu-vert plus doux
         const colors = [
-            'rgba(167, 139, 250, 0.8)',  // Violet
-            'rgba(236, 72, 153, 0.8)',   // Rose
-            'rgba(45, 212, 191, 0.8)',   // Turquoise
-            'rgba(251, 146, 60, 0.8)',   // Orange
-            'rgba(99, 102, 241, 0.8)'    // Indigo
+            'rgba(45, 212, 191, 0.85)',   // Turquoise principal
+            'rgba(34, 211, 238, 0.85)',   // Cyan
+            'rgba(56, 189, 248, 0.85)',   // Bleu clair
         ];
 
-        const data = {
-            labels: Object.keys(salesByCountry),
-            datasets: [{
-                data: Object.values(salesByCountry),
-                backgroundColor: Object.keys(salesByCountry).map((_, index) => 
-                    colors[index % colors.length]
-                ),
-                borderWidth: 0,
-                hoverOffset: 4
-            }]
-        };
+        // Filtrer et trier les pays par nombre de ventes
+        Object.entries(salesByCountry)
+            .filter(([_, value]) => value > 0)
+            .sort((a, b) => b[1] - a[1])
+            .forEach(([country, value]) => {
+                const countryName = this.getCountryName(country);
+                labels.push(countryName);
+                data.push(value);
+                rawData[countryName] = value;
+            });
 
         this.chart = new Chart(ctx, {
-            type: 'doughnut',
-            data: data,
+            type: 'pie',
+            data: {
+                labels: labels,
+                datasets: [{
+                    data: data,
+                    backgroundColor: colors,
+                    borderColor: 'rgba(17, 24, 39, 0.8)',
+                    borderWidth: 2,
+                    hoverBorderColor: '#ffffff',
+                    hoverBorderWidth: 0,
+                    hoverOffset: 4
+                }]
+            },
             options: {
                 responsive: true,
-                maintainAspectRatio: true,
-                aspectRatio: 1.2,
+                maintainAspectRatio: false,
                 layout: {
                     padding: {
                         top: 5,
-                        bottom: 5,
-                        left: 5,
-                        right: 5
+                        bottom: 5
                     }
                 },
                 plugins: {
                     legend: {
-                        position: 'right',
+                        display: true,
+                        position: 'bottom',
                         labels: {
-                            color: 'rgba(229, 231, 235, 0.9)',
+                            color: 'rgb(156, 163, 175)',
                             font: {
-                                size: 10
+                                size: 11,
+                                weight: '500'
                             },
-                            padding: 5
+                            padding: 10,
+                            usePointStyle: true,
+                            pointStyle: 'circle',
+                            boxWidth: 6
                         }
                     },
                     tooltip: {
-                        backgroundColor: 'rgba(17, 24, 39, 0.8)',
-                        titleColor: 'rgba(229, 231, 235, 0.9)',
-                        bodyColor: 'rgba(229, 231, 235, 0.9)',
-                        padding: 8,
-                        boxPadding: 4
+                        callbacks: {
+                            label: (context) => {
+                                const label = context.label || '';
+                                const value = context.raw || 0;
+                                const total = context.dataset.data.reduce((acc, val) => acc + val, 0);
+                                const percentage = ((value / total) * 100).toFixed(1);
+                                return ` ${label}: ${value} ventes (${percentage}%)`;
+                            }
+                        },
+                        backgroundColor: 'rgba(17, 24, 39, 0.9)',
+                        titleColor: 'rgb(209, 213, 219)',
+                        bodyColor: 'rgb(209, 213, 219)',
+                        padding: 10,
+                        cornerRadius: 6,
+                        displayColors: false
                     }
-                },
-                cutout: '60%',
-                animation: {
-                    animateScale: true,
-                    animateRotate: true
                 }
             }
         });
+    }
+
+    getCountryName(country) {
+        const countryNames = {
+            italie: 'Italie',
+            espagne: 'Espagne',
+            allemagne: 'Allemagne',
+            republiqueTcheque: 'Rép. Tchèque',
+            lituanie: 'Lituanie',
+            paysBas: 'Pays-Bas',
+            royaumeUni: 'Royaume-Uni'
+        };
+        return countryNames[country] || country;
     }
 }

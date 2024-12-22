@@ -1,4 +1,5 @@
 import { patterns, extractors } from './regexPatterns.js';
+import { languagePatterns, exclusionPatterns } from './languagePatterns.js';
 
 const transformers = {
     parsePrice(priceStr) {
@@ -202,6 +203,8 @@ class VintedAnalyzer {
     }
 
     _analyserLanguesCommentaires(commentaires) {
+        console.group('🔍 Analyse détaillée des commentaires par pays');
+        
         const ventesParPays = {
             italie: 0,
             espagne: 0,
@@ -212,27 +215,112 @@ class VintedAnalyzer {
             royaumeUni: 0
         };
 
-        const patterns = {
-            italie: /\b(grazie|oggetto|venditor[ei]|gentil[ei]|perfetto|tutto)\b/i,
-            espagne: /\b(gracias|todo|bien|perfecto|vendedor[ae]?)\b/i,
-            allemagne: /\b(danke|sehr|gut|perfekt|verkäufer(in)?)\b/i,
-            republiqueTcheque: /\b(děkuji|dobře|perfektní|prodejce|zboží)\b/i,
-            lituanie: /\b(ačiū|puiku|tobula|pardavėjas|prekė)\b/i,
-            anglais: /\b(thank|perfect|good|great|seller|received)\b/i
-        };
-
-        commentaires.forEach(commentaire => {
-            if (patterns.italie.test(commentaire)) ventesParPays.italie++;
-            if (patterns.espagne.test(commentaire)) ventesParPays.espagne++;
-            if (patterns.allemagne.test(commentaire)) ventesParPays.allemagne++;
-            if (patterns.republiqueTcheque.test(commentaire)) ventesParPays.republiqueTcheque++;
-            if (patterns.lituanie.test(commentaire)) ventesParPays.lituanie++;
-            if (patterns.anglais.test(commentaire)) {
-                ventesParPays.paysBas++;
-                ventesParPays.royaumeUni++;
-            }
+        console.log('📝 Mots-clés recherchés par pays:');
+        Object.entries(languagePatterns).forEach(([pays, { pattern, examples }]) => {
+            console.log(`${pays}:`, pattern);
+            console.log('Exemples:', examples.join(', '));
         });
 
+        const ventesTotales = {
+            ...ventesParPays,
+            france: 0
+        };
+
+        commentaires.forEach((commentaire, index) => {
+            console.group(`\n💬 Analyse du commentaire #${index + 1}:`);
+            console.log(`Commentaire: "${commentaire}"`);
+            
+            // Ignorer les évaluations automatiques
+            if (commentaire.includes("Évaluation automatique")) {
+                console.log('⏭️ Évaluation automatique ignorée');
+                console.groupEnd();
+                return;
+            }
+            
+            let paysDetectes = [];
+            let matchCount = {};
+            
+            // Compter le nombre de correspondances pour chaque langue
+            Object.entries(languagePatterns).forEach(([pays, { pattern }]) => {
+                const matches = (commentaire.match(pattern) || []).length;
+                if (matches > 0) {
+                    matchCount[pays] = matches;
+                }
+            });
+
+            // Déterminer la langue la plus probable
+            if (Object.keys(matchCount).length > 0) {
+                const [langueDetectee, _] = Object.entries(matchCount)
+                    .sort(([,a], [,b]) => b - a)[0];
+
+                // Cas spéciaux
+                if (langueDetectee === 'anglais') {
+                    // Vérifier si c'est plus probablement néerlandais
+                    if (exclusionPatterns.anglais.test(commentaire)) {
+                        ventesParPays.paysBas++;
+                        ventesTotales.paysBas++;
+                        paysDetectes.push('🇳🇱 Pays-Bas');
+                    } else {
+                        ventesParPays.royaumeUni++;
+                        ventesTotales.royaumeUni++;
+                        paysDetectes.push('🇬🇧 Royaume-Uni');
+                    }
+                } else if (langueDetectee === 'espagne' && exclusionPatterns.espagne.test(commentaire)) {
+                    console.log('⚠️ Commentaire ignoré car probablement en français');
+                    ventesTotales.france++;
+                } else if (langueDetectee === 'allemagne' && exclusionPatterns.allemagne.test(commentaire)) {
+                    console.log('⚠️ Commentaire ignoré car probablement en français');
+                    ventesTotales.france++;
+                } else if (langueDetectee === 'france') {
+                    ventesTotales.france++;
+                    paysDetectes.push('🇫🇷 France (non compté)');
+                } else {
+                    ventesParPays[langueDetectee]++;
+                    ventesTotales[langueDetectee]++;
+                    const emojis = {
+                        italie: '🇮🇹',
+                        espagne: '🇪🇸',
+                        allemagne: '🇩🇪',
+                        republiqueTcheque: '🇨🇿',
+                        lituanie: '🇱🇹'
+                    };
+                    paysDetectes.push(`${emojis[langueDetectee]} ${langueDetectee.charAt(0).toUpperCase() + langueDetectee.slice(1)}`);
+                }
+            }
+
+            if (paysDetectes.length > 0) {
+                console.log('✅ Pays détectés:', paysDetectes.join(', '));
+                console.log('📊 Nombre de correspondances:', matchCount);
+            } else {
+                console.log('❌ Aucun pays détecté');
+            }
+            console.groupEnd();
+        });
+        
+        console.log('\n📊 Résumé des ventes par pays (hors France):');
+        Object.entries(ventesParPays).forEach(([pays, nombre]) => {
+            const emoji = {
+                italie: '🇮🇹',
+                espagne: '🇪🇸',
+                allemagne: '🇩🇪',
+                republiqueTcheque: '🇨🇿',
+                lituanie: '🇱🇹',
+                paysBas: '🇳🇱',
+                royaumeUni: '🇬🇧'
+            };
+            console.log(`${emoji[pays]} ${pays}: ${nombre} vente(s)`);
+        });
+
+        console.log('\n🔍 Statistiques complètes (incluant la France):');
+        console.log(ventesTotales);
+
+        // Stocker les ventes totales (incluant la France) pour le calcul des pourcentages
+        this.result.boutique.stats.ventesTotales = ventesTotales;
+        
+        // Pour le graphique, on n'utilise que les ventes internationales
+        this.result.boutique.stats.ventesParPays = ventesParPays;
+
+        console.groupEnd();
         return ventesParPays;
     }
 
@@ -304,8 +392,8 @@ class VintedAnalyzer {
         console.group('📊 Statistiques des ventes');
         console.log('Nombre d\'articles avec stats:', this.result.ventes_stat.length);
         if (this.result.ventes_stat.length > 0) {
-            const totalVues = this.result.ventes_stat.reduce((sum, v) => sum + parseInt(v.vues), 0);
-            const totalFavoris = this.result.ventes_stat.reduce((sum, v) => sum + parseInt(v.favoris), 0);
+            const totalVues = this.result.ventes_stat.reduce((acc, v) => acc + parseInt(v.vues), 0);
+            const totalFavoris = this.result.ventes_stat.reduce((acc, v) => acc + parseInt(v.favoris), 0);
             const tauxEngagement = totalVues > 0 ? (totalFavoris / totalVues * 100).toFixed(2) : 0;
 
             console.log('Statistiques globales:', {
