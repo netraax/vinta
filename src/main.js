@@ -11,6 +11,7 @@ import SalesChartModule from './modules/SalesChartModule.js';
 import EngagementModule from './modules/EngagementModule.js';
 import CountrySalesModule from './modules/CountrySalesModule.js';
 import BrandTasksModule from './modules/BrandTasksModule.js';
+import DashboardUpdateModule from './modules/DashboardUpdateModule.js';
 
 class App {
     constructor() {
@@ -46,6 +47,9 @@ class App {
         const engagementModule = new EngagementModule('engagement-module');
         const countrySalesModule = new CountrySalesModule('country-sales-module');
         const brandTasksModule = new BrandTasksModule('brand-tasks-module');
+        
+        // Ajouter le module de mise à jour rapide
+        const dashboardUpdateModule = new DashboardUpdateModule('dashboard-update-module');
 
         // Monter les modules dans le dashboard
         const dashboardStats = document.getElementById('dashboard-stats');
@@ -125,7 +129,8 @@ class App {
             salesChart: salesChartModule,
             engagement: engagementModule,
             countrySales: countrySalesModule,
-            brandTasks: brandTasksModule
+            brandTasks: brandTasksModule,
+            dashboardUpdate: dashboardUpdateModule
         };
 
         // Mettre à jour les informations utilisateur
